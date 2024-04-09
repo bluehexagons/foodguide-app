@@ -1,5 +1,5 @@
 const { app, BrowserWindow } = require('electron');
-const path = require('node:path')
+const path = require('node:path');
 
 const createWindow = () => {
   const win = new BrowserWindow({
@@ -33,11 +33,3 @@ app.on('window-all-closed', () => {
     app.quit();
   }
 });
-
-app.on('web-contents-created', (event, contents) => {
-  contents.on('will-navigate', (event, navigationUrl) => {
-    console.log(navigationUrl)
-      // event.preventDefault()
-  })
-})
-console.log('test')
