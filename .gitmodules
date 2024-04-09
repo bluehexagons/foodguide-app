@@ -1,0 +1,3 @@
+[submodule "foodguide"]
+	path = foodguide
+	url = https://github.com/bluehexagons/foodguide

@@ -1,0 +1,15 @@
+{
+  "name": "@bluehexagons/foodguide-app",
+  "version": "1.0.0",
+  "description": "Desktop app version of the unofficial Food Guide",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "electron ."
+  },
+  "author": "bluehexagons",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^29.2.0"
+  }
+}
