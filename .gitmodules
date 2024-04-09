@@ -1,3 +1,6 @@
 [submodule "foodguide"]
 	path = foodguide
 	url = https://github.com/bluehexagons/foodguide
+[submodule "app/foodguide"]
+	path = app/foodguide
+	url = https://github.com/bluehexagons/foodguide
