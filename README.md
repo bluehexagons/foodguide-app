@@ -1,5 +1,7 @@
 # Food Guide - Desktop edition
-An Unofficial Food Guide for Don't Starve, running in Electron as a desktop application.
+An Unofficial Food Guide for Don't Starve, running in a thin Electron wrapper as a desktop application.
+
+Includes the [main food guide repository](https://github.com/bluehexagons/foodguide) as a git submodule.
 
 ## Releases
 A portable version built using Electron Forge can be downloaded on the [releases](https://github.com/bluehexagons/foodguide-app/releases) page.
