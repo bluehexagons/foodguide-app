@@ -6,6 +6,16 @@ Includes the [main food guide repository](https://github.com/bluehexagons/foodgu
 ## Releases
 A portable version built using Electron Forge can be downloaded on the [releases](https://github.com/bluehexagons/foodguide-app/releases) page.
 
+## Automated build and release
+
+This repository includes GitHub Actions workflows for:
+
+- **Build validation** on pushes and pull requests (`.github/workflows/build.yml`)
+- **Release publishing** from version tags (`v*`) or manual dispatch (`.github/workflows/release.yml`)
+- **Dependency updates** through Dependabot (`.github/dependabot.yml`) for npm and GitHub Actions
+
+To publish a release from CI, push a version tag (for example `v1.2.3`) or run the release workflow manually from GitHub.
+
 ## Running from source
 Clone the repository with submodules, install, and start.
 
