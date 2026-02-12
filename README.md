@@ -3,8 +3,10 @@ An Unofficial Food Guide for Don't Starve, running in a thin Electron wrapper as
 
 Includes the [main food guide repository](https://github.com/bluehexagons/foodguide) as a git submodule.
 
-## Releases
-A portable version built using Electron Forge can be downloaded on the [releases](https://github.com/bluehexagons/foodguide-app/releases) page.
+## Automated builds
+
+This repository includes GitHub Actions workflows for release publishing from version tags (`v*`).
+To publish a release from CI, push a version tag (for example `v1.2.3`) or run the release workflow manually from GitHub.
 
 ## Running from source
 Clone the repository with submodules, install, and start.
