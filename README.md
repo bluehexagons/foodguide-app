@@ -14,7 +14,7 @@ Clone the repository with submodules, install, and start.
 ```
 > git clone --recurse-submodules https://github.com/bluehexagons/foodguide-app.git
 > cd foodguide-app
-> npm install
+> npm ci
 > npm start
 ```
 
