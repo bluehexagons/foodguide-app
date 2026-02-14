@@ -4,6 +4,7 @@ const { FuseV1Options, FuseVersion } = require('@electron/fuses');
 module.exports = {
   packagerConfig: {
     asar: true,
+    osxSign: {}, // Prevents automatic ad-hoc signing mismatches during universal build
   },
   rebuildConfig: {},
   makers: [
