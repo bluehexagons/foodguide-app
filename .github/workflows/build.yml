@@ -31,7 +31,7 @@ jobs:
         run: npm ci
 
       - name: Build distributables
-        run: npm run make
+        run: npm run make ${{ runner.os == 'macOS' && '-- --arch=universal' || '' }}
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v6

@@ -39,7 +39,7 @@ jobs:
         run: npm ci
 
       - name: Build release artifacts
-        run: npm run make
+        run: npm run make ${{ runner.os == 'macOS' && '-- --arch=universal' || '' }}
 
       - name: Upload release artifacts
         uses: actions/upload-artifact@v6
@@ -58,8 +58,17 @@ jobs:
           merge-multiple: true
           path: release-assets
 
+      - name: Generate SHA256 checksums
+        run: |
+          cd release-assets
+          find . -type f | sort | while read -r file; do
+            sha256sum "$file"
+          done > ../SHA256SUMS.txt
+          cp ../SHA256SUMS.txt .
+
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
           files: release-assets/**/*
           tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+          generate_release_notes: true

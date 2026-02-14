@@ -1,0 +1,7 @@
+# GitHub's auto-generated source archives do not include submodules.
+# Users should clone with --recurse-submodules instead of downloading
+# source archives from the releases page.
+# See: https://github.com/bluehexagons/foodguide-app#running-from-source
+
+# Normalize line endings
+* text=auto
