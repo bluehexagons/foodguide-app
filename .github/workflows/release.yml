@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest]
 
     steps:
       - name: Checkout
@@ -39,7 +39,7 @@ jobs:
         run: npm ci
 
       - name: Build release artifacts
-        run: npm run make ${{ runner.os == 'macOS' && '-- --arch=universal' || '' }}
+        run: npm run make
 
       - name: Upload release artifacts
         uses: actions/upload-artifact@v7

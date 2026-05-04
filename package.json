@@ -4,7 +4,7 @@
   "description": "Desktop app version of the unofficial Food Guide",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "echo \"No automated tests configured\"",
     "start": "electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make"
@@ -20,7 +20,7 @@
     "@electron-forge/plugin-auto-unpack-natives": "^7.11.1",
     "@electron-forge/plugin-fuses": "^7.11.1",
     "@reforged/maker-appimage": "^5.2.0",
-    "electron": "^41.2.1"
+    "electron": "^41.5.0"
   },
   "dependencies": {
     "electron-squirrel-startup": "^1.0.1"
