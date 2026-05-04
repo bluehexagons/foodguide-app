@@ -1,6 +1,6 @@
 {
   "name": "foodguide-app",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "Desktop app version of the unofficial Food Guide",
   "main": "index.js",
   "scripts": {
