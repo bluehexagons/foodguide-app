@@ -6,6 +6,7 @@ Includes the [main food guide repository](https://github.com/bluehexagons/foodgu
 ## Automated builds
 
 This repository includes GitHub Actions workflows for release publishing from version tags (`v*`).
+CI currently builds and publishes Windows and Linux artifacts only; macOS packaging is not produced in GitHub Actions.
 To publish a release from CI, push a version tag (for example `v1.2.3`) or run the release workflow manually from GitHub.
 
 ## Running from source
