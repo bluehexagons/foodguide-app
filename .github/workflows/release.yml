@@ -46,6 +46,7 @@ jobs:
         with:
           name: release-${{ matrix.os }}
           path: out/make/**/*
+          retention-days: 7
 
   publish:
     runs-on: ubuntu-latest

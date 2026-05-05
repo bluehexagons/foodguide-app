@@ -38,3 +38,4 @@ jobs:
         with:
           name: make-${{ matrix.os }}
           path: out/make/**/*
+          retention-days: 7
