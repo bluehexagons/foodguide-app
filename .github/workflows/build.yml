@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -24,11 +28,20 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            app/foodguide/package-lock.json
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Install Food Guide dependencies
+        run: npm ci --prefix app/foodguide
+
+      - name: Validate the app and embedded Food Guide
+        run: npm run check
 
       - name: Build distributables
         run: npm run make

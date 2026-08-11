@@ -19,6 +19,18 @@ Clone the repository with submodules, install, and start.
 > npm start
 ```
 
+The desktop wrapper requires Node.js 20.19.0 or newer. The embedded Food Guide
+has its own development dependencies because it is maintained as a submodule.
+To run the full validation suite locally:
+
+```
+> npm ci --prefix app/foodguide
+> npm run check
+```
+
+`npm test` also works after the root install and runs the Food Guide tests plus
+a syntax check of the Electron entry point.
+
 ## Building a release
 Electron Forge is used to build releases.
 

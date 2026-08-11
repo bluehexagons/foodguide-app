@@ -4,23 +4,31 @@
   "description": "Desktop app version of the unofficial Food Guide",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"No automated tests configured\"",
+    "test": "npm run test:guide && node --check index.js",
+    "test:guide": "npm --prefix app/foodguide test",
+    "lint": "npm --prefix app/foodguide run lint",
+    "format:check": "npm --prefix app/foodguide run format:check",
+    "typecheck": "npm --prefix app/foodguide run typecheck",
+    "check": "npm run test && npm run lint && npm run format:check && npm run typecheck",
     "start": "electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make"
   },
   "author": "bluehexagons",
   "license": "MIT",
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "devDependencies": {
-    "@electron-forge/cli": "^7.11.1",
-    "@electron-forge/maker-deb": "^7.11.1",
-    "@electron-forge/maker-dmg": "^7.11.1",
-    "@electron-forge/maker-squirrel": "^7.11.1",
-    "@electron-forge/maker-zip": "^7.11.1",
-    "@electron-forge/plugin-auto-unpack-natives": "^7.11.1",
-    "@electron-forge/plugin-fuses": "^7.11.1",
+    "@electron-forge/cli": "^7.11.2",
+    "@electron-forge/maker-deb": "^7.11.2",
+    "@electron-forge/maker-dmg": "^7.11.2",
+    "@electron-forge/maker-squirrel": "^7.11.2",
+    "@electron-forge/maker-zip": "^7.11.2",
+    "@electron-forge/plugin-auto-unpack-natives": "^7.11.2",
+    "@electron-forge/plugin-fuses": "^7.11.2",
     "@reforged/maker-appimage": "^5.2.0",
-    "electron": "^41.5.0"
+    "electron": "^41.10.4"
   },
   "dependencies": {
     "electron-squirrel-startup": "^1.0.1"
