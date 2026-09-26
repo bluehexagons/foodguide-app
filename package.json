@@ -1,6 +1,6 @@
 {
   "name": "foodguide-app",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "description": "Desktop app version of the unofficial Food Guide",
   "main": "index.js",
   "scripts": {
@@ -27,8 +27,8 @@
     "@electron-forge/maker-zip": "^7.11.2",
     "@electron-forge/plugin-auto-unpack-natives": "^7.11.2",
     "@electron-forge/plugin-fuses": "^7.11.2",
-    "@reforged/maker-appimage": "^5.2.0",
-    "electron": "^41.10.4"
+    "@reforged/maker-appimage": "^5.3.1",
+    "electron": "^44.4.5"
   },
   "dependencies": {
     "electron-squirrel-startup": "^1.0.1"
