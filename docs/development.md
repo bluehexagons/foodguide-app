@@ -3,11 +3,20 @@
 The desktop repository contains the Electron wrapper and build configuration. The guide's data, UI, translations, and assets live in the separate [Food Guide repository](https://github.com/bluehexagons/foodguide), pinned here as `app/foodguide`.
 
 The guide's browser suite includes keyboard navigation and axe-core accessibility
-audits of every panel in both themes and all three languages. Run it with
+audits of every panel in both themes and all three languages. It also checks
+emulated touch taps, canceled gestures, scrolling, long-press handling, and
+control sizing across narrow phone and larger tablet/desktop viewports. Run it with
 `npm --prefix app/foodguide run test:browser` after installing Chromium in that
 checkout. The native Electron smoke test separately exercises arrow-key tabs,
 ingredient removal with Space, empty-slot activation, Escape/reopening the picker,
 and table sorting with keyboard focus retained.
+
+Native File/Edit/View/Window menus preserve platform keyboard and accessibility
+conventions. The View menu provides zoom in/out/reset with the standard
+Command/Ctrl shortcuts. Pinch zoom is enabled from 1× to 5× after each page load;
+Electron [disables visual zoom by default](https://www.electronjs.org/docs/latest/api/web-contents#contentssetvisualzoomlevellimitsminimumlevel-maximumlevel).
+The native smoke test verifies menu zoom actions and keyboard zoom/reset. Check
+pinch behavior and touch target sizing on a physical touchscreen as well.
 
 ## Repository layout
 

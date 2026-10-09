@@ -29,13 +29,15 @@ async function startWrapper({ installer = false, platform = 'linux', loadError =
       this.webContents.setWindowOpenHandler = handler => {
         this.openHandler = handler;
       };
+      this.zoomLimits = [];
+      this.webContents.setVisualZoomLevelLimits = (min, max) => {
+        this.zoomLimits.push([min, max]);
+        return Promise.resolve();
+      };
       calls.windows.push(this);
     }
     static getAllWindows() {
       return calls.windows;
-    }
-    removeMenu() {
-      this.menuRemoved = true;
     }
     show() {
       this.visible = true;
@@ -48,6 +50,12 @@ async function startWrapper({ installer = false, platform = 'linux', loadError =
   const electron = {
     app,
     BrowserWindow,
+    Menu: {
+      buildFromTemplate: template => template,
+      setApplicationMenu: menu => {
+        calls.menu = menu;
+      },
+    },
     shell: {
       openExternal: url => {
         calls.external.push(url);
@@ -79,9 +87,10 @@ test('installer events quit without scheduling startup or creating windows', asy
   assert.equal(calls.ready, 0);
   assert.equal(calls.windows.length, 0);
   assert.equal(app.eventNames().length, 0);
+  assert.equal(calls.menu, undefined);
 });
 
-test('the guide opens in a sandbox with its own icon and no application menu', async () => {
+test('the guide opens in a sandbox with native zoom controls and pinch zoom after each load', async () => {
   const { calls } = await startWrapper();
   const win = calls.windows[0];
   assert.equal(calls.windows.length, 1);
@@ -89,7 +98,18 @@ test('the guide opens in a sandbox with its own icon and no application menu', a
   assert.equal(win.options.webPreferences.sandbox, true);
   assert.equal(win.options.webPreferences.nodeIntegration, false);
   assert.equal(win.options.icon, path.join(root, 'app/foodguide/html/icon.png'));
-  assert.equal(win.menuRemoved, true);
+  const zoomMenu = calls.menu.find(item => item.role === 'viewMenu');
+  assert.deepEqual(
+    Array.from(zoomMenu.submenu, item => item.role),
+    ['resetZoom', 'zoomIn', 'zoomOut'],
+  );
+  assert.deepEqual(win.zoomLimits, []);
+  win.webContents.emit('did-finish-load');
+  win.webContents.emit('did-finish-load');
+  assert.deepEqual(win.zoomLimits, [
+    [1, 5],
+    [1, 5],
+  ]);
   assert.equal(win.visible, undefined);
   win.emit('ready-to-show');
   assert.equal(win.visible, true);
@@ -153,6 +173,10 @@ test('only credential-free HTTPS URLs can open in the system browser', () => {
 test('macOS activation recreates a closed window and closing follows platform conventions', async () => {
   for (const platform of ['linux', 'win32', 'darwin']) {
     const { app, calls } = await startWrapper({ platform });
+    assert.equal(
+      calls.menu.some(item => item.role === 'appMenu'),
+      platform === 'darwin',
+    );
     app.emit('activate');
     assert.equal(calls.windows.length, 1);
     calls.windows.length = 0;

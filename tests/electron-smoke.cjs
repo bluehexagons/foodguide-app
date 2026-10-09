@@ -3,7 +3,7 @@ const { once } = require('node:events');
 const { mkdir, writeFile } = require('node:fs/promises');
 const path = require('node:path');
 const { setTimeout: delay } = require('node:timers/promises');
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, Menu } = require('electron');
 
 assert(process.env.FOODGUIDE_TEST_PROFILE, 'Run this test with npm run test:electron');
 app.setPath('userData', process.env.FOODGUIDE_TEST_PROFILE);
@@ -47,6 +47,26 @@ async function main() {
     await win.webContents.executeJavaScript('document.title'),
     "Don't Starve Food Guide",
   );
+
+  const menu = Menu.getApplicationMenu();
+  assert(menu);
+  const originalScale = await win.webContents.executeJavaScript('devicePixelRatio');
+  const modifier = process.platform === 'darwin' ? 'meta' : 'control';
+  for (const type of ['keyDown', 'keyUp']) {
+    win.webContents.sendInputEvent({ type, keyCode: '-', modifiers: [modifier] });
+  }
+  await waitFor(win, `devicePixelRatio < ${originalScale}`);
+  assert(win.webContents.getZoomFactor() < 1);
+  for (const type of ['keyDown', 'keyUp']) {
+    win.webContents.sendInputEvent({ type, keyCode: '0', modifiers: [modifier] });
+  }
+  await waitFor(win, `Math.abs(devicePixelRatio - ${originalScale}) < 0.01`);
+  assert.equal(win.webContents.getZoomFactor(), 1);
+  menu.getMenuItemById('zoom-in').click(undefined, win, win.webContents);
+  await waitFor(win, `devicePixelRatio > ${originalScale}`);
+  assert(win.webContents.getZoomFactor() > 1);
+  menu.getMenuItemById('reset-zoom').click(undefined, win, win.webContents);
+  await waitFor(win, `Math.abs(devicePixelRatio - ${originalScale}) < 0.01`);
 
   const manifest = await win.webContents.executeJavaScript(`(async () => {
     const response = await fetch('img/sprites/sprites.json');
@@ -227,7 +247,7 @@ async function main() {
     (await win.webContents.capturePage()).toPNG(),
   );
   console.log(
-    `Electron smoke passed: ${manifest} sprites, mushroom search, keyboard recipes, ingredient removal, picker dismissal, tab navigation, mouse ingredient entry, keyboard table sorting and focus, saved theme/language, sandbox, blocked popup.`,
+    `Electron smoke passed: ${manifest} sprites, native zoom menus and shortcuts, mushroom search, keyboard recipes, ingredient removal, picker dismissal, tab navigation, mouse ingredient entry, keyboard table sorting and focus, saved theme/language, sandbox, blocked popup.`,
   );
 }
 

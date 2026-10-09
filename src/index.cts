@@ -4,7 +4,7 @@ import url = require('node:url');
 import navigation = require('./lib/navigation.cjs');
 import installerStartup = require('electron-squirrel-startup');
 
-const { app, BrowserWindow, shell } = electron;
+const { app, BrowserWindow, Menu, shell } = electron;
 const { pathToFileURL } = url;
 const { isExternalUrl, isGuideUrl } = navigation;
 const root = path.resolve(__dirname, '..');
@@ -33,7 +33,11 @@ const createWindow = () => {
     },
   });
 
-  win.removeMenu();
+  win.webContents.on('did-finish-load', () => {
+    void win.webContents.setVisualZoomLevelLimits(1, 5).catch(error => {
+      console.error('Unable to enable pinch zoom:', error);
+    });
+  });
   win.webContents.setWindowOpenHandler(({ url }) => {
     openExternalUrl(url);
     return { action: 'deny' };
@@ -60,6 +64,23 @@ if (installerStartup) {
   void app
     .whenReady()
     .then(() => {
+      const template: Electron.MenuItemConstructorOptions[] = [
+        { role: 'fileMenu' },
+        { role: 'editMenu' },
+        {
+          role: 'viewMenu',
+          submenu: [
+            { id: 'reset-zoom', role: 'resetZoom' },
+            { id: 'zoom-in', role: 'zoomIn' },
+            { id: 'zoom-out', role: 'zoomOut' },
+          ],
+        },
+        { role: 'windowMenu' },
+      ];
+      if (process.platform === 'darwin') {
+        template.unshift({ role: 'appMenu' });
+      }
+      Menu.setApplicationMenu(Menu.buildFromTemplate(template));
       createWindow();
       app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) {
