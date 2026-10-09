@@ -52,7 +52,7 @@ export function verifyPackage(outputPath: string, platform: string) {
       return;
     }
     visited.add(filename);
-    const source = extractFile(archive, filename.slice(1)).toString('utf8');
+    const source = extractFile(archive, path.normalize(filename.slice(1))).toString('utf8');
     for (const { specifier } of parse(source, filename)[0]) {
       if (specifier?.startsWith('.')) {
         verifyModule(path.posix.join(path.posix.dirname(filename), specifier));
