@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+import { runProcess } from './run-process.mjs';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -12,26 +12,12 @@ if (typeof electron !== 'string') {
 
 const profile = await mkdtemp(path.join(tmpdir(), 'foodguide-app-test-'));
 try {
-  const child = spawn(
-    electron,
-    [path.join(import.meta.dirname, '../../tests/electron-smoke.cjs')],
-    {
-      stdio: 'inherit',
-      env: { ...process.env, FOODGUIDE_TEST_PROFILE: profile },
-    },
-  );
-  const timeout = setTimeout(() => {
-    console.error('Electron smoke test exceeded its 60-second deadline');
-    child.kill();
-  }, 60_000);
-  try {
-    process.exitCode = await new Promise<number>((resolve, reject) => {
-      child.once('error', reject);
-      child.once('exit', code => resolve(code ?? 1));
-    });
-  } finally {
-    clearTimeout(timeout);
-  }
+  process.exitCode = await runProcess({
+    command: electron,
+    args: [path.join(import.meta.dirname, '../../tests/electron-smoke.cjs')],
+    timeoutMs: 60_000,
+    env: { ...process.env, FOODGUIDE_TEST_PROFILE: profile },
+  });
 } finally {
   await rm(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 }
