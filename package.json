@@ -44,6 +44,7 @@
     "@types/debug": "^4.1.13",
     "@types/node": "^26.6.4",
     "electron": "^44.7.0",
+    "es-module-lexer": "^3.0.3",
     "oxfmt": "^0.72.0",
     "oxlint": "^1.87.0",
     "sharp": "^0.35.5",

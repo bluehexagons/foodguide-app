@@ -4,7 +4,7 @@ export const ignoreFile = (filePath: string) => {
   const normalized = filePath.replaceAll('\\', '/');
   if (
     /\/(?:\.git|\.github|test|tests)(?:\/|$)/.test(normalized) ||
-    /\.(?:d\.ts|d\.cts|d\.mts|map)$/.test(normalized)
+    /\.(?:[cm]?tsx?|map)$/.test(normalized)
   ) {
     return true;
   }

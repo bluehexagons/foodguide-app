@@ -198,6 +198,8 @@ test('packaging keeps runtime files and excludes guide development dependencies'
     '/dist/lib/packaging.cjs',
     '/dist/index.d.cts',
     '/app/foodguide/html/models.d.ts',
+    '/app/foodguide/html/food.ts',
+    '/app/foodguide/html/food.js.map',
     '/src/index.cts',
     '/tests/wrapper.test.cjs',
     '/.github/workflows/build.yml',

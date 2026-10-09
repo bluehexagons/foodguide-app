@@ -2,6 +2,7 @@ import { parseSpriteManifest } from '../../app/foodguide/html/utils.js';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import { extractFile, listPackage } from '@electron/asar';
+import { parse } from 'es-module-lexer/js';
 
 export function verifyPackage(outputPath: string, platform: string) {
   const resources =
@@ -16,6 +17,8 @@ export function verifyPackage(outputPath: string, platform: string) {
     '/LICENSE',
     '/app/foodguide/LICENSE',
     '/app/foodguide/html/index.htm',
+    '/app/foodguide/html/index.html',
+    '/app/foodguide/html/style/main.css',
     '/app/foodguide/html/icon.png',
     '/node_modules/electron-squirrel-startup/index.js',
   ]) {
@@ -29,6 +32,36 @@ export function verifyPackage(outputPath: string, platform: string) {
     !files.some(file => file.startsWith('/app/foodguide/node_modules/')),
     'The guide development dependencies must not ship',
   );
+  assert(
+    !files.some(
+      file =>
+        /\.(?:[cm]?tsx?|map)$/.test(file) ||
+        file.startsWith('/src/') ||
+        file.startsWith('/forge.config.'),
+    ),
+    'TypeScript sources, declarations, or build configuration leaked into the packaged app',
+  );
+
+  // Check the compiled browser modules inside the archive, including nested imports
+  // and re-exports. Reading the checkout would miss files excluded during packaging.
+  const packagedFiles = new Set(files);
+  const visited = new Set<string>();
+  const verifyModule = (filename: string) => {
+    assert(packagedFiles.has(filename), `Missing packaged module: ${filename}`);
+    if (visited.has(filename)) {
+      return;
+    }
+    visited.add(filename);
+    const source = extractFile(archive, filename.slice(1)).toString('utf8');
+    for (const { specifier } of parse(source, filename)[0]) {
+      if (specifier?.startsWith('.')) {
+        verifyModule(path.posix.join(path.posix.dirname(filename), specifier));
+      }
+    }
+  };
+  verifyModule('/app/foodguide/html/foodguide.js');
+  verifyModule('/app/foodguide/html/legacy-browser-warning.js');
+
   const guideRoot = 'app/foodguide/html/';
   const manifest = parseSpriteManifest(
     JSON.parse(

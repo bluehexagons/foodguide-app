@@ -35,7 +35,7 @@ Run `npm run test:electron` from a graphical session. Its temporary profile keep
 xvfb-run -a npm run test:electron
 ```
 
-Before changing build tooling or the submodule, also run `npm run make` and open the resulting packaged app. The Forge `postPackage` hook checks the ASAR archive for required guide files and generated sprites. Linux AppImage builds need `mksquashfs`.
+Before changing build tooling or the submodule, also run `npm run make` and open the resulting packaged app. The Forge `postPackage` hook reads the ASAR archive to check the compiled guide entry point, its module imports, required assets, and sprite sheets. It also rejects TypeScript declarations and other development files. Unit tests exercise complete and deliberately incomplete archives. Linux AppImage builds need `mksquashfs`.
 
 ## Update the embedded guide
 
