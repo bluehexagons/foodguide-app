@@ -1,66 +1,57 @@
-# Food Guide - Desktop edition
+# Food Guide — desktop edition
 
-An Unofficial Food Guide for Don't Starve, running in a thin Electron wrapper as a desktop application.
+An unofficial [Don't Starve Food Guide](https://github.com/bluehexagons/foodguide) in an Electron desktop app. The bundled guide works offline; external HTTPS links open in your default browser.
 
-Includes the [main food guide repository](https://github.com/bluehexagons/foodguide) as a git submodule.
+Download Windows and Linux builds from [Releases](https://github.com/bluehexagons/foodguide-app/releases). Windows has a Squirrel installer and a portable ZIP. Linux has an AppImage and a Debian package. Builds target a specific processor architecture; AppImages still require a compatible Linux system.
 
-## Automated builds
+## Run from source
 
-This repository includes GitHub Actions workflows for release publishing from version tags (`v*`).
-CI currently builds and publishes Windows and Linux artifacts only; macOS packaging is not produced in GitHub Actions.
-To publish a release from CI, push a version tag (for example `v1.2.3`) or run the release workflow manually from GitHub.
+Use Node.js 24 LTS and Git. Node.js 22.13 or newer in the 22.x series is also supported. The app and embedded guide each have their own dependencies, so install both:
 
-## Running from source
-
-Clone the repository with submodules, install, and start.
-
-```
-> git clone --recurse-submodules https://github.com/bluehexagons/foodguide-app.git
-> cd foodguide-app
-> npm ci
-> npm start
+```sh
+git clone --recurse-submodules https://github.com/bluehexagons/foodguide-app.git
+cd foodguide-app
+npm ci
+npm ci --ignore-scripts --prefix app/foodguide
+npm start
 ```
 
-The desktop wrapper requires Node.js 20.19.0 or newer. The embedded Food Guide
-has its own development dependencies because it is maintained as a submodule.
-To run the full validation suite locally:
+For an existing checkout, run `git submodule update --init --recursive` before installing. GitHub's generated source archives omit the guide submodule; use a recursive clone.
 
-```
-> npm ci --prefix app/foodguide
-> npm run check
-```
+Starting and packaging automatically generate sprite sheets and platform icons from the guide's assets. Generated files stay out of Git.
 
-`npm test` also works after the root install and runs the Food Guide tests plus
-a syntax check of the Electron entry point.
+## Validate changes
 
-## Building a release
-
-Electron Forge is used to build releases.
-
-After running its make command, platform-specific installers and portable versions will be added to the `/out` directory.
-
-**Build outputs per platform:**
-
-- **Windows**: Squirrel installer (.exe) + Portable ZIP
-- **macOS**: DMG installer (universal binary - supports both Intel x64 and Apple Silicon ARM)
-- **Linux**: AppImage (universal - works on all distros including Ubuntu, Fedora, SteamOS/Arch) + Debian package (.deb)
-
-**Linux build requirements:**
-To build AppImages, you need `squashfs-tools` installed:
-
-```bash
-# Debian/Ubuntu
-sudo apt-get install squashfs-tools
-
-# Fedora
-sudo dnf install squashfs-tools
-
-# Arch
-sudo pacman -S squashfs-tools
+```sh
+npm run check
+npm run test:electron
 ```
 
-**Build command:**
+`check` runs wrapper and guide unit tests, ESLint, formatting checks, and the guide's TypeScript checks. `test:electron` opens the real app with a temporary profile, checks sprites, keyboard recipe entry, saved preferences, and sandbox settings, then closes it. Both commands require the two dependency installs above. The Electron test also needs a graphical session; Linux CI uses `xvfb-run -a npm run test:electron`.
 
+See [development and dependency maintenance](docs/development.md) for the repository layout, submodule updates, and the remaining DMG build dependency advisory.
+
+## Package the app
+
+Electron Forge builds for the current operating system and architecture:
+
+```sh
+npm run package
+npm run make
 ```
-> npm run make
-```
+
+The unpacked app goes in `out/foodguide-app-<platform>-<arch>/`; installers go in `out/make/`. Packaging verifies that the archive contains the guide, sprites, runtime dependencies, and licenses, and excludes development files.
+
+| Platform | Configured outputs               | Additional requirements                                    |
+| -------- | -------------------------------- | ---------------------------------------------------------- |
+| Windows  | Squirrel installer, portable ZIP | Build on Windows                                           |
+| Linux    | AppImage, Debian package         | `mksquashfs` from `squashfs-tools`; Debian packaging tools |
+| macOS    | DMG                              | Build on macOS; not built in CI                            |
+
+On Debian/Ubuntu, install Linux build tools with `sudo apt-get install squashfs-tools dpkg`. For other distributions, install their equivalent packages. To target a different architecture, pass Forge's `--arch` option, for example `npm run make -- --arch=arm64`. A normal build produces one architecture rather than a universal macOS app.
+
+GitHub Actions validates and builds Windows and Linux on pushes to `main`, pull requests, and manual runs. CI artifacts expire after three days. Version tags publish release artifacts and SHA256 checksums; see [release instructions](docs/releases.md).
+
+## License and credits
+
+The repository is licensed under [Apache-2.0](LICENSE), as is the embedded [Food Guide](app/foodguide/LICENSE). See the guide's About tab for contributors and game asset credits. Don't Starve and its artwork belong to Klei Entertainment; this project is unofficial.
