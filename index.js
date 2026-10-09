@@ -1,19 +1,10 @@
 const { app, BrowserWindow, shell } = require('electron');
 const path = require('node:path');
+const { pathToFileURL } = require('node:url');
+const { isExternalUrl, isGuideUrl } = require('./lib/navigation.cjs');
 
-// Squirrel launches the app briefly during install and uninstall. Exit early
-// so those lifecycle operations do not open a user-facing window.
-if (require('electron-squirrel-startup')) {
-  app.quit();
-}
-
-const isExternalUrl = url => {
-  try {
-    return new URL(url).protocol === 'https:';
-  } catch {
-    return false;
-  }
-};
+const guidePath = path.join(__dirname, 'app/foodguide/html/index.htm');
+const guideUrl = pathToFileURL(guidePath).href;
 
 const openExternalUrl = url => {
   if (isExternalUrl(url)) {
@@ -28,7 +19,7 @@ const createWindow = () => {
     show: false,
     width: 1000,
     height: 600,
-    titleBarStyle: 'default',
+    icon: path.join(__dirname, 'app/foodguide/html/icon.png'),
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -37,39 +28,47 @@ const createWindow = () => {
   });
 
   win.removeMenu();
-
-  // Keep the local guide in the app and send its documented HTTPS links to
-  // the user's default browser instead of creating remote Electron windows.
   win.webContents.setWindowOpenHandler(({ url }) => {
     openExternalUrl(url);
     return { action: 'deny' };
   });
-  win.webContents.on('will-navigate', (event, navigationUrl) => {
-    if (!navigationUrl.startsWith('file:')) {
+  const guardNavigation = (event, url) => {
+    if (!isGuideUrl(url, guideUrl)) {
       event.preventDefault();
-      openExternalUrl(navigationUrl);
+      openExternalUrl(url);
     }
-  });
-
-  win.loadFile(path.join(__dirname, 'app/foodguide/html/index.htm'));
-
-  win.once('ready-to-show', () => {
-    win.show();
+  };
+  win.webContents.on('will-navigate', guardNavigation);
+  win.webContents.on('will-redirect', guardNavigation);
+  win.once('ready-to-show', () => win.show());
+  void win.loadFile(guidePath).catch(error => {
+    console.error('Unable to load the Food Guide:', error);
+    app.exit(1);
   });
 };
 
-app.whenReady().then(() => {
-  createWindow();
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
+// Installer events must skip the entire normal startup path.
+if (require('electron-squirrel-startup')) {
+  app.quit();
+} else {
+  void app
+    .whenReady()
+    .then(() => {
       createWindow();
+      app.on('activate', () => {
+        if (BrowserWindow.getAllWindows().length === 0) {
+          createWindow();
+        }
+      });
+    })
+    .catch(error => {
+      console.error('Unable to start the Food Guide:', error);
+      app.exit(1);
+    });
+
+  app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') {
+      app.quit();
     }
   });
-});
-
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
-});
+}

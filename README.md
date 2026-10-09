@@ -1,4 +1,5 @@
 # Food Guide - Desktop edition
+
 An Unofficial Food Guide for Don't Starve, running in a thin Electron wrapper as a desktop application.
 
 Includes the [main food guide repository](https://github.com/bluehexagons/foodguide) as a git submodule.
@@ -10,6 +11,7 @@ CI currently builds and publishes Windows and Linux artifacts only; macOS packag
 To publish a release from CI, push a version tag (for example `v1.2.3`) or run the release workflow manually from GitHub.
 
 ## Running from source
+
 Clone the repository with submodules, install, and start.
 
 ```
@@ -32,17 +34,20 @@ To run the full validation suite locally:
 a syntax check of the Electron entry point.
 
 ## Building a release
+
 Electron Forge is used to build releases.
 
 After running its make command, platform-specific installers and portable versions will be added to the `/out` directory.
 
 **Build outputs per platform:**
+
 - **Windows**: Squirrel installer (.exe) + Portable ZIP
 - **macOS**: DMG installer (universal binary - supports both Intel x64 and Apple Silicon ARM)
 - **Linux**: AppImage (universal - works on all distros including Ubuntu, Fedora, SteamOS/Arch) + Debian package (.deb)
 
 **Linux build requirements:**
 To build AppImages, you need `squashfs-tools` installed:
+
 ```bash
 # Debian/Ubuntu
 sudo apt-get install squashfs-tools
@@ -55,6 +60,7 @@ sudo pacman -S squashfs-tools
 ```
 
 **Build command:**
+
 ```
 > npm run make
 ```
