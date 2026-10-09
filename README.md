@@ -6,7 +6,7 @@ Download Windows and Linux builds from [Releases](https://github.com/bluehexagon
 
 ## Run from source
 
-Use Node.js 24 LTS and Git. Node.js 22.13 or newer in the 22.x series is also supported. The app and embedded guide each have their own dependencies, so install both:
+Use Node.js 24 or newer and Git. CI uses Node.js 24; `nvm use` selects that major version from `.nvmrc`. Dependency installation rejects older Node versions. The app and embedded guide each have their own dependencies, so install both:
 
 ```sh
 git clone --recurse-submodules https://github.com/bluehexagons/foodguide-app.git
@@ -25,10 +25,11 @@ the wrapper and embedded guide, then generate sprite sheets and platform icons f
 
 ```sh
 npm run check
+npm run audit
 npm run test:electron
 ```
 
-`check` runs wrapper and guide unit tests, oxlint, oxfmt checks, and strict TypeScript checks for the wrapper, Forge configuration, and guide. `test:electron` opens the real app with a temporary profile, checks sprites, keyboard recipe entry, saved preferences, and sandbox settings, then closes it. Both commands require the two dependency installs above. The Electron test also needs a graphical session; Linux CI uses `xvfb-run -a npm run test:electron`.
+`check` runs wrapper and guide unit tests, oxlint, oxfmt checks, and strict TypeScript checks for the wrapper, Forge configuration, and guide. `audit` checks both dependency sets. `test:electron` opens the real app with a temporary profile, checks sprites, keyboard recipe entry, saved preferences, and sandbox settings, then closes it. These commands require the two dependency installs above. The Electron test also needs a graphical session; Linux CI uses `xvfb-run -a npm run test:electron`.
 
 See [development and dependency maintenance](docs/development.md) for the repository layout, submodule updates, and packaging dependency overrides.
 

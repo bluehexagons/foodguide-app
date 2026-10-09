@@ -1,10 +1,11 @@
 import electron = require('electron');
-const { app, BrowserWindow, shell } = electron;
 import path = require('node:path');
 import url = require('node:url');
-const { pathToFileURL } = url;
 import navigation = require('./lib/navigation.cjs');
 import installerStartup = require('electron-squirrel-startup');
+
+const { app, BrowserWindow, shell } = electron;
+const { pathToFileURL } = url;
 const { isExternalUrl, isGuideUrl } = navigation;
 const root = path.resolve(__dirname, '..');
 

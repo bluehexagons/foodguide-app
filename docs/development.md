@@ -58,9 +58,23 @@ The parent commit records the gitlink; guide edits must be committed and pushed 
 
 ## Dependencies
 
-Use `npm outdated` and `npm audit` at the root, and repeat them with `--prefix app/foodguide` for the guide. Upgrade guide dependencies in the guide repository.
+Use `npm run audit` to audit both dependency sets; a failure in either repository
+fails the command. Both CI workflows run it before building distributables.
+Use `npm outdated` at the root and repeat it with `--prefix app/foodguide` for
+the guide. Upgrade guide dependencies in the guide repository.
 
-Forge 8 requires Node.js 22.13 or newer and uses ES modules for its tooling configuration. Node.js 24 LTS is used in CI. The `@reforged/maker-appimage` override selects Forge's 8.0.1 maker base because its published dependency range still selects Forge 7 and brings in vulnerable build dependencies. Recheck that override when upgrading either package; the AppImage build exercises its compatibility.
+Both repositories require Node.js 24 or newer. CI uses Node.js 24, `.nvmrc`
+selects that major version for local development, and `.npmrc` enforces the
+minimum version during installation. Forge 8 uses ES modules for its tooling
+configuration.
+
+The guide uses Node.js 24 declarations. The wrapper currently needs
+`@types/node` 26 because Forge's `listr2` declarations import `InspectColor`,
+which the Node.js 24 declarations do not export. This is a build-time type
+dependency; the wrapper and build tools must continue to run on Node.js 24.
+Recheck the typing requirement when upgrading Forge or `listr2`.
+
+The `@reforged/maker-appimage` override selects Forge's 8.0.1 maker base because its published dependency range still selects Forge 7 and brings in vulnerable build dependencies. Recheck that override when upgrading either package; the AppImage build exercises its compatibility.
 
 The root `allowScripts` entry permits the reviewed `electron-winstaller` script to select its host architecture's 7-Zip files. When upgrading that dependency with npm versions that require script approval, inspect the changed script and refresh the pinned approval.
 

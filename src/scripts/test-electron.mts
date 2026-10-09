@@ -20,7 +20,10 @@ try {
       env: { ...process.env, FOODGUIDE_TEST_PROFILE: profile },
     },
   );
-  const timeout = setTimeout(() => child.kill(), 60_000);
+  const timeout = setTimeout(() => {
+    console.error('Electron smoke test exceeded its 60-second deadline');
+    child.kill();
+  }, 60_000);
   try {
     process.exitCode = await new Promise<number>((resolve, reject) => {
       child.once('error', reject);

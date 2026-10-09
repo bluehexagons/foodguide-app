@@ -4,6 +4,7 @@
   "description": "Desktop app version of the unofficial Food Guide",
   "main": "dist/index.cjs",
   "scripts": {
+    "audit": "npm audit && npm --prefix app/foodguide audit",
     "test": "npm run test:app && npm run test:guide",
     "test:guide": "npm --prefix app/foodguide test",
     "lint": "oxlint --disable-nested-config --deny-warnings && npm --prefix app/foodguide run lint",
@@ -26,7 +27,7 @@
   "author": "bluehexagons",
   "license": "Apache-2.0",
   "engines": {
-    "node": "^22.13.0 || >=24"
+    "node": ">=24"
   },
   "devDependencies": {
     "@electron-forge/cli": "^8.0.1",

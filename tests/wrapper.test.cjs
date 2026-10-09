@@ -186,6 +186,7 @@ test('packaging keeps runtime files and excludes guide development dependencies'
     '/app/foodguide/html/locales/es.js',
   ]) {
     assert.equal(ignoreFile(file), false, file);
+    assert.equal(ignoreFile(file.replaceAll('/', '\\')), false, file);
   }
   for (const file of [
     '/app/foodguide/node_modules/sharp/index.js',
@@ -206,5 +207,6 @@ test('packaging keeps runtime files and excludes guide development dependencies'
     '/README.md',
   ]) {
     assert.equal(ignoreFile(file), true, file);
+    assert.equal(ignoreFile(file.replaceAll('/', '\\')), true, file);
   }
 });
