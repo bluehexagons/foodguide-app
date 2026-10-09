@@ -38,7 +38,7 @@ async function clickElement(win, selector) {
 async function main() {
   const [, win] = await created;
   await once(win.webContents, 'did-finish-load');
-  await waitFor(win, "document.querySelectorAll('#navbar li[data-tab]').length === 7");
+  await waitFor(win, "document.querySelectorAll('#navbar [role=tab]').length === 7");
   assert.equal(win.webContents.getLastWebPreferences().sandbox, true);
   assert.equal(win.webContents.getLastWebPreferences().contextIsolation, true);
   assert.equal(win.webContents.getLastWebPreferences().nodeIntegration, false);
@@ -125,6 +125,7 @@ async function main() {
     ),
     true,
   );
+
   win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Space' });
   win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Space' });
   await waitFor(
@@ -136,6 +137,62 @@ async function main() {
       `document.activeElement === document.querySelector(${JSON.stringify(`${healthHeader} button`)})`,
     ),
     true,
+  );
+
+  await clickElement(win, '#navbar [data-tab=simulator]');
+  win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Right' });
+  win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Right' });
+  await waitFor(
+    win,
+    "document.activeElement?.dataset.tab === 'discovery' && document.querySelector('#tab-discovery').getAttribute('aria-selected') === 'true'",
+  );
+  assert.equal(
+    await win.webContents.executeJavaScript("document.querySelector('#simulator').hidden"),
+    true,
+  );
+  win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Left' });
+  win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Left' });
+  await waitFor(win, "document.activeElement?.dataset.tab === 'simulator'");
+  await win.webContents.executeJavaScript(
+    "document.querySelector('#ingredients .ingredient:nth-child(4)').focus()",
+  );
+  win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Space' });
+  win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Space' });
+  await waitFor(win, "document.querySelectorAll('#ingredients [data-id]').length === 3");
+  assert.equal(
+    await win.webContents.executeJavaScript(
+      "document.activeElement === document.querySelector('#ingredients .ingredient:nth-child(4)')",
+    ),
+    true,
+  );
+  assert.equal(
+    await win.webContents.executeJavaScript("document.activeElement.getAttribute('aria-label')"),
+    'Add an ingredient',
+  );
+  win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Return' });
+  // Native button Enter activation uses keypress, emitted by Electron's char event.
+  win.webContents.sendInputEvent({ type: 'char', keyCode: '\r' });
+  win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Return' });
+  await waitFor(
+    win,
+    "document.activeElement === document.querySelector('#simulator .ingredientpicker')",
+  );
+  win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
+  win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' });
+  await waitFor(
+    win,
+    "document.querySelector('#simulator .ingredientdropdown').hidden && document.activeElement.getAttribute('aria-expanded') === 'false'",
+  );
+  win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Down' });
+  win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Down' });
+  win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Return' });
+  win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Return' });
+  await waitFor(win, "document.querySelectorAll('#ingredients [data-id]').length === 4");
+  assert.equal(
+    await win.webContents.executeJavaScript(
+      "document.querySelector('#simulator [role=status]').textContent",
+    ),
+    'Added Berries.',
   );
 
   await win.webContents.executeJavaScript(`(() => {
@@ -170,7 +227,7 @@ async function main() {
     (await win.webContents.capturePage()).toPNG(),
   );
   console.log(
-    `Electron smoke passed: ${manifest} sprites, mushroom search, keyboard recipes, mouse ingredient entry, keyboard table sorting and focus, saved theme/language, sandbox, blocked popup.`,
+    `Electron smoke passed: ${manifest} sprites, mushroom search, keyboard recipes, ingredient removal, picker dismissal, tab navigation, mouse ingredient entry, keyboard table sorting and focus, saved theme/language, sandbox, blocked popup.`,
   );
 }
 

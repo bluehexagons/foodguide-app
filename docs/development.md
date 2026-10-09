@@ -2,6 +2,13 @@
 
 The desktop repository contains the Electron wrapper and build configuration. The guide's data, UI, translations, and assets live in the separate [Food Guide repository](https://github.com/bluehexagons/foodguide), pinned here as `app/foodguide`.
 
+The guide's browser suite includes keyboard navigation and axe-core accessibility
+audits of every panel in both themes and all three languages. Run it with
+`npm --prefix app/foodguide run test:browser` after installing Chromium in that
+checkout. The native Electron smoke test separately exercises arrow-key tabs,
+ingredient removal with Space, empty-slot activation, Escape/reopening the picker,
+and table sorting with keyboard focus retained.
+
 ## Repository layout
 
 | Path                           | Purpose                                                                                                                       |
