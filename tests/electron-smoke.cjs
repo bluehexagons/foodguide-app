@@ -113,6 +113,31 @@ async function main() {
   win.webContents.removeListener('console-message', recordWarning);
   assert.deepEqual(warnings, []);
 
+  const healthHeader = '#results table th[data-sort="health"]';
+  await clickElement(win, `${healthHeader} button`);
+  await waitFor(
+    win,
+    `document.querySelector(${JSON.stringify(healthHeader)})?.getAttribute('aria-sort') === 'descending'`,
+  );
+  assert.equal(
+    await win.webContents.executeJavaScript(
+      `document.activeElement === document.querySelector(${JSON.stringify(`${healthHeader} button`)})`,
+    ),
+    true,
+  );
+  win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Space' });
+  win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Space' });
+  await waitFor(
+    win,
+    `document.querySelector(${JSON.stringify(healthHeader)})?.getAttribute('aria-sort') === 'ascending'`,
+  );
+  assert.equal(
+    await win.webContents.executeJavaScript(
+      `document.activeElement === document.querySelector(${JSON.stringify(`${healthHeader} button`)})`,
+    ),
+    true,
+  );
+
   await win.webContents.executeJavaScript(`(() => {
     document.querySelector('#theme-toggle').click();
     const select = document.querySelector('#language-picker');
@@ -145,7 +170,7 @@ async function main() {
     (await win.webContents.capturePage()).toPNG(),
   );
   console.log(
-    `Electron smoke passed: ${manifest} sprites, mushroom search, keyboard recipes, mouse ingredient entry, saved theme/language, sandbox, blocked popup.`,
+    `Electron smoke passed: ${manifest} sprites, mushroom search, keyboard recipes, mouse ingredient entry, keyboard table sorting and focus, saved theme/language, sandbox, blocked popup.`,
   );
 }
 
