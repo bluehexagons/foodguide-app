@@ -4,22 +4,30 @@ The desktop repository contains the Electron wrapper and build configuration. Th
 
 ## Repository layout
 
-| Path                       | Purpose                                                                                                                       |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `index.js`                 | Electron window and application lifecycle                                                                                     |
-| `lib/`                     | Navigation policy and packaging file selection                                                                                |
-| `forge.config.mjs`         | Makers, asset generation, package verification, and Electron fuses                                                            |
-| `scripts/`                 | Generate sprites/icons, verify packaged assets, and run native smoke tests                                                    |
-| `tests/`                   | Wrapper regression tests and the real Electron smoke test                                                                     |
-| `tools/image-size-compat/` | Local callback-compatible adapter for the DMG image parser                                                                    |
-| `app/foodguide/`           | Guide submodule; see its [development documentation](https://github.com/bluehexagons/foodguide/blob/main/docs/development.md) |
-| `.generated/`, `out/`      | Ignored generated icons, packages, and test captures                                                                          |
+| Path                           | Purpose                                                                                                                       |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| `src/index.cts`                | Electron window and application lifecycle                                                                                     |
+| `src/lib/`                     | Navigation policy and packaging file selection                                                                                |
+| `forge.config.mts`             | Makers, asset generation, package verification, and Electron fuses                                                            |
+| `src/scripts/`                 | Generate sprites/icons, verify packaged assets, and run native smoke tests                                                    |
+| `tests/`                       | Wrapper regression tests and the real Electron smoke test                                                                     |
+| `tools/image-size-compat/`     | Local callback-compatible adapter for the DMG image parser                                                                    |
+| `app/foodguide/`               | Guide submodule; see its [development documentation](https://github.com/bluehexagons/foodguide/blob/main/docs/development.md) |
+| `dist/`, `.generated/`, `out/` | Ignored generated icons, packages, and test captures                                                                          |
+
+Production and build sources use strict TypeScript. `npm run build` compiles the
+wrapper to `dist/` and builds the pinned guide. `.cts` files emit CommonJS for
+Electron; `.mts` build tools emit ES modules. Forge loads `forge.config.mts`
+through its TypeScript configuration support after the scripts have been built.
+`npm start`, `npm run package`, and `npm run make` build automatically.
+JavaScript tests run against the compiled runtime. The small `image-size-compat`
+installation adapter remains JavaScript so it can run during dependency installation.
 
 The wrapper loads the bundled entry page with Node integration disabled, context isolation enabled, and renderer sandboxing enabled. It allows navigation to that page and its anchors. Other local files and popups are blocked; credential-free HTTPS links go to the system browser. Squirrel installation events exit before normal startup.
 
 ## Checks
 
-Install both dependency sets as described in the [README](../README.md). Run `npm run check` for unit tests, lint, formatting, and guide type checks. To format wrapper code and documentation, run `npx prettier --write .`; the root formatter ignores the separately maintained guide.
+Install both dependency sets as described in the [README](../README.md). Run `npm run check` for unit tests, lint, formatting, and strict wrapper, Forge, and guide type checks. oxlint checks TypeScript sources and JavaScript tests with correctness rules and rejects explicit `any`; warnings fail CI. oxfmt checks code, documentation, and configuration. Run `npm run format` to format the wrapper or `npm run fix` to apply safe lint fixes and format both projects. The root tools exclude generated files and the guide submodule; the lint and formatting check commands validate the guide using its own configuration.
 
 Run `npm run test:electron` from a graphical session. Its temporary profile keeps tests independent of personal app preferences, and its screenshot is saved to `out/test-results/electron-smoke.png`. On a headless Linux machine with Xvfb installed:
 

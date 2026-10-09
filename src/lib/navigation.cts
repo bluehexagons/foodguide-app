@@ -1,4 +1,4 @@
-const isExternalUrl = value => {
+export const isExternalUrl = (value: string) => {
   try {
     const url = new URL(value);
     return url.protocol === 'https:' && !url.username && !url.password;
@@ -7,7 +7,7 @@ const isExternalUrl = value => {
   }
 };
 
-const isGuideUrl = (value, entryUrl) => {
+export const isGuideUrl = (value: string, entryUrl: string) => {
   try {
     const url = new URL(value);
     url.hash = '';
@@ -16,5 +16,3 @@ const isGuideUrl = (value, entryUrl) => {
     return false;
   }
 };
-
-module.exports = { isExternalUrl, isGuideUrl };

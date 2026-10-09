@@ -18,7 +18,8 @@ npm start
 
 For an existing checkout, run `git submodule update --init --recursive` before installing. GitHub's generated source archives omit the guide submodule; use a recursive clone.
 
-Starting and packaging automatically generate sprite sheets and platform icons from the guide's assets. Generated files stay out of Git.
+The wrapper is written in strict TypeScript. Starting and packaging automatically compile
+the wrapper and embedded guide, then generate sprite sheets and platform icons from the guide's assets. Generated files stay out of Git.
 
 ## Validate changes
 
@@ -27,7 +28,7 @@ npm run check
 npm run test:electron
 ```
 
-`check` runs wrapper and guide unit tests, ESLint, formatting checks, and the guide's TypeScript checks. `test:electron` opens the real app with a temporary profile, checks sprites, keyboard recipe entry, saved preferences, and sandbox settings, then closes it. Both commands require the two dependency installs above. The Electron test also needs a graphical session; Linux CI uses `xvfb-run -a npm run test:electron`.
+`check` runs wrapper and guide unit tests, oxlint, oxfmt checks, and strict TypeScript checks for the wrapper, Forge configuration, and guide. `test:electron` opens the real app with a temporary profile, checks sprites, keyboard recipe entry, saved preferences, and sandbox settings, then closes it. Both commands require the two dependency installs above. The Electron test also needs a graphical session; Linux CI uses `xvfb-run -a npm run test:electron`.
 
 See [development and dependency maintenance](docs/development.md) for the repository layout, submodule updates, and packaging dependency overrides.
 
@@ -50,7 +51,7 @@ The unpacked app goes in `out/foodguide-app-<platform>-<arch>/`; installers go i
 
 On Debian/Ubuntu, install Linux build tools with `sudo apt-get install squashfs-tools dpkg`. For other distributions, install their equivalent packages. To target a different architecture, pass Forge's `--arch` option, for example `npm run make -- --arch=arm64`. A normal build produces one architecture rather than a universal macOS app.
 
-GitHub Actions validates and builds Windows, Linux, and macOS on pushes to `main`, pull requests, and manual runs. CI artifacts expire after three days. Version tags publish Windows and Linux release artifacts and SHA256 checksums; see [release instructions](docs/releases.md).
+GitHub Actions validates and builds Windows, Linux, and macOS on pushes to `main` and `feature/typescript-migration`, pull requests, and manual runs. CI artifacts expire after three days. Version tags publish Windows and Linux release artifacts and SHA256 checksums; see [release instructions](docs/releases.md).
 
 ## License and credits
 

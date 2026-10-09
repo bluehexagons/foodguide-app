@@ -8,7 +8,7 @@ const { app, BrowserWindow } = require('electron');
 assert(process.env.FOODGUIDE_TEST_PROFILE, 'Run this test with npm run test:electron');
 app.setPath('userData', process.env.FOODGUIDE_TEST_PROFILE);
 const created = once(app, 'browser-window-created');
-require('../index.js');
+require('../dist/index.cjs');
 
 async function waitFor(win, expression) {
   const deadline = Date.now() + 15_000;

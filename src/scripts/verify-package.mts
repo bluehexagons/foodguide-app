@@ -1,17 +1,18 @@
+import { parseSpriteManifest } from '../../app/foodguide/html/utils.js';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import { extractFile, listPackage } from '@electron/asar';
 
-export function verifyPackage(outputPath, platform) {
+export function verifyPackage(outputPath: string, platform: string) {
   const resources =
     platform === 'darwin'
       ? path.join(outputPath, 'foodguide-app.app/Contents/Resources')
       : path.join(outputPath, 'resources');
   const archive = path.join(resources, 'app.asar');
-  const files = listPackage(archive).map(file => file.replaceAll('\\', '/'));
+  const files = listPackage(archive, { isPack: false }).map(file => file.replaceAll('\\', '/'));
   for (const file of [
-    '/index.js',
-    '/lib/navigation.cjs',
+    '/dist/index.cjs',
+    '/dist/lib/navigation.cjs',
     '/LICENSE',
     '/app/foodguide/LICENSE',
     '/app/foodguide/html/index.htm',
@@ -29,8 +30,10 @@ export function verifyPackage(outputPath, platform) {
     'The guide development dependencies must not ship',
   );
   const guideRoot = 'app/foodguide/html/';
-  const manifest = JSON.parse(
-    extractFile(archive, path.join(guideRoot, 'img', 'sprites', 'sprites.json')),
+  const manifest = parseSpriteManifest(
+    JSON.parse(
+      extractFile(archive, path.join(guideRoot, 'img', 'sprites', 'sprites.json')).toString('utf8'),
+    ),
   );
   assert(Object.keys(manifest.images).length > 0, 'The sprite manifest is empty');
   for (const sheet of manifest.sheets) {

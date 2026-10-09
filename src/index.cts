@@ -1,12 +1,17 @@
-const { app, BrowserWindow, shell } = require('electron');
-const path = require('node:path');
-const { pathToFileURL } = require('node:url');
-const { isExternalUrl, isGuideUrl } = require('./lib/navigation.cjs');
+import electron = require('electron');
+const { app, BrowserWindow, shell } = electron;
+import path = require('node:path');
+import url = require('node:url');
+const { pathToFileURL } = url;
+import navigation = require('./lib/navigation.cjs');
+import installerStartup = require('electron-squirrel-startup');
+const { isExternalUrl, isGuideUrl } = navigation;
+const root = path.resolve(__dirname, '..');
 
-const guidePath = path.join(__dirname, 'app/foodguide/html/index.htm');
+const guidePath = path.join(root, 'app/foodguide/html/index.htm');
 const guideUrl = pathToFileURL(guidePath).href;
 
-const openExternalUrl = url => {
+const openExternalUrl = (url: string) => {
   if (isExternalUrl(url)) {
     void shell.openExternal(url).catch(() => {
       // The system browser may be unavailable in restricted environments.
@@ -19,7 +24,7 @@ const createWindow = () => {
     show: false,
     width: 1000,
     height: 600,
-    icon: path.join(__dirname, 'app/foodguide/html/icon.png'),
+    icon: path.join(root, 'app/foodguide/html/icon.png'),
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -32,7 +37,7 @@ const createWindow = () => {
     openExternalUrl(url);
     return { action: 'deny' };
   });
-  const guardNavigation = (event, url) => {
+  const guardNavigation = (event: Electron.Event, url: string) => {
     if (!isGuideUrl(url, guideUrl)) {
       event.preventDefault();
       openExternalUrl(url);
@@ -48,7 +53,7 @@ const createWindow = () => {
 };
 
 // Installer events must skip the entire normal startup path.
-if (require('electron-squirrel-startup')) {
+if (installerStartup) {
   app.quit();
 } else {
   void app

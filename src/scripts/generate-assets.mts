@@ -4,7 +4,7 @@ import path from 'node:path';
 import { promisify } from 'node:util';
 import sharp from 'sharp';
 
-const root = path.resolve(import.meta.dirname, '..');
+const root = path.resolve(import.meta.dirname, '../..');
 const source = path.join(root, 'app/foodguide/html/icon.png');
 
 export async function generateAssets() {

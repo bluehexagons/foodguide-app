@@ -1,13 +1,14 @@
+import type { ForgeConfig } from '@electron-forge/shared-types';
 import path from 'node:path';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
-import { generateAssets } from './scripts/generate-assets.mjs';
-import { verifyPackage } from './scripts/verify-package.mjs';
-import packaging from './lib/packaging.cjs';
+import { generateAssets } from './dist/scripts/generate-assets.mjs';
+import { verifyPackage } from './dist/scripts/verify-package.mjs';
+import packaging from './dist/lib/packaging.cjs';
 
 const icon = path.join(import.meta.dirname, 'app/foodguide/html/icon.png');
 
-export default {
+const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
     icon: path.join(import.meta.dirname, '.generated/icon'),
@@ -51,3 +52,5 @@ export default {
     }),
   ],
 };
+
+export default config;

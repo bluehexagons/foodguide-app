@@ -5,8 +5,8 @@ const path = require('node:path');
 const { test } = require('node:test');
 const { pathToFileURL } = require('node:url');
 const vm = require('node:vm');
-const { isExternalUrl, isGuideUrl } = require('../lib/navigation.cjs');
-const { ignoreFile } = require('../lib/packaging.cjs');
+const { isExternalUrl, isGuideUrl } = require('../dist/lib/navigation.cjs');
+const { ignoreFile } = require('../dist/lib/packaging.cjs');
 
 const root = path.resolve(__dirname, '..');
 const entryUrl = pathToFileURL(path.join(root, 'app/foodguide/html/index.htm')).href;
@@ -55,16 +55,17 @@ async function startWrapper({ installer = false, platform = 'linux', loadError =
       },
     },
   };
-  vm.runInNewContext(readFileSync(path.join(root, 'index.js'), 'utf8'), {
+  vm.runInNewContext(readFileSync(path.join(root, 'dist/index.cjs'), 'utf8'), {
     require: name =>
       name === 'electron'
         ? electron
         : name === 'electron-squirrel-startup'
           ? installer
           : name.startsWith('./')
-            ? require(path.join(root, name))
+            ? require(path.join(root, 'dist', name))
             : require(name),
-    __dirname: root,
+    __dirname: path.join(root, 'dist'),
+    exports: {},
     process: { platform },
     console: { error: () => {} },
   });
@@ -171,12 +172,14 @@ test('packaging keeps runtime files and excludes guide development dependencies'
   for (const file of [
     '',
     '/',
+    '/dist',
+    '/dist/lib',
     '/app',
     '/app/foodguide',
-    '/index.js',
+    '/dist/index.cjs',
     '/package.json',
     '/LICENSE',
-    '/lib/navigation.cjs',
+    '/dist/lib/navigation.cjs',
     '/node_modules/debug/src/index.js',
     '/app/foodguide/LICENSE',
     '/app/foodguide/html/img/sprites/sprites.json',
@@ -190,7 +193,12 @@ test('packaging keeps runtime files and excludes guide development dependencies'
     '/app/foodguide/tests/functions.test.js',
     '/app/foodguide/scripts/generate-sprites.js',
     '/node_modules/electron-squirrel-startup/test/index.test.js',
-    '/forge.config.mjs',
+    '/forge.config.mts',
+    '/dist/scripts/generate-assets.mjs',
+    '/dist/lib/packaging.cjs',
+    '/dist/index.d.cts',
+    '/app/foodguide/html/models.d.ts',
+    '/src/index.cts',
     '/tests/wrapper.test.cjs',
     '/.github/workflows/build.yml',
     '/README.md',
