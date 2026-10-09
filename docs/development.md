@@ -4,15 +4,16 @@ The desktop repository contains the Electron wrapper and build configuration. Th
 
 ## Repository layout
 
-| Path                  | Purpose                                                                                                                       |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `index.js`            | Electron window and application lifecycle                                                                                     |
-| `lib/`                | Navigation policy and packaging file selection                                                                                |
-| `forge.config.mjs`    | Makers, asset generation, package verification, and Electron fuses                                                            |
-| `scripts/`            | Generate sprites/icons, verify packaged assets, and run native smoke tests                                                    |
-| `tests/`              | Wrapper regression tests and the real Electron smoke test                                                                     |
-| `app/foodguide/`      | Guide submodule; see its [development documentation](https://github.com/bluehexagons/foodguide/blob/main/docs/development.md) |
-| `.generated/`, `out/` | Ignored generated icons, packages, and test captures                                                                          |
+| Path                       | Purpose                                                                                                                       |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `index.js`                 | Electron window and application lifecycle                                                                                     |
+| `lib/`                     | Navigation policy and packaging file selection                                                                                |
+| `forge.config.mjs`         | Makers, asset generation, package verification, and Electron fuses                                                            |
+| `scripts/`                 | Generate sprites/icons, verify packaged assets, and run native smoke tests                                                    |
+| `tests/`                   | Wrapper regression tests and the real Electron smoke test                                                                     |
+| `tools/image-size-compat/` | Local callback-compatible adapter for the DMG image parser                                                                    |
+| `app/foodguide/`           | Guide submodule; see its [development documentation](https://github.com/bluehexagons/foodguide/blob/main/docs/development.md) |
+| `.generated/`, `out/`      | Ignored generated icons, packages, and test captures                                                                          |
 
 The wrapper loads the bundled entry page with Node integration disabled, context isolation enabled, and renderer sandboxing enabled. It allows navigation to that page and its anchors. Other local files and popups are blocked; credential-free HTTPS links go to the system browser. Squirrel installation events exit before normal startup.
 
@@ -55,14 +56,16 @@ Forge 8 requires Node.js 22.13 or newer and uses ES modules for its tooling conf
 
 The root `allowScripts` entry permits the reviewed `electron-winstaller` script to select its host architecture's 7-Zip files. When upgrading that dependency with npm versions that require script approval, inspect the changed script and refresh the pinned approval.
 
-### Remaining build dependency finding
+### DMG image parser compatibility
 
-As of October 9, 2026, `npm audit` reports four high-severity entries for one advisory in the macOS DMG chain:
+The macOS DMG toolchain still requests the old `image-size` API:
 
 ```text
 @electron-forge/maker-dmg → electron-installer-dmg → appdmg → image-size
 ```
 
-[GHSA-w3rx-r6r6-pgpr](https://github.com/advisories/GHSA-w3rx-r6r6-pgpr) concerns an infinite loop when parsing a malformed ICNS image. The installed `appdmg` uses the old callback/file-path API of `image-size`; the patched 2.x release changes that API. A forced major override would break background-image handling. Keep the finding visible until the DMG toolchain supports a patched version, and use repository-controlled image assets for packaging.
+[GHSA-w3rx-r6r6-pgpr](https://github.com/advisories/GHSA-w3rx-r6r6-pgpr) concerns an infinite loop when parsing a malformed ICNS image. The targeted `appdmg` override replaces its vulnerable parser with `tools/image-size-compat`. This adapter exports the callable `imageSize` function from the pinned [community-maintained `image-size-next@1.2.2`](https://github.com/lcf2212dev/image-size-next/blob/main/SECURITY.md), preserving file paths and callbacks. The original patched 2.x API would require changes to `appdmg`.
 
-These are development dependencies excluded from the app archive. `npm audit --omit=dev` is clean. Windows and Linux builds do not run the DMG maker; macOS packaging needs a separate native verification.
+The override's `../../tools/image-size-compat` path is relative to `node_modules/appdmg`. Keep the adapter installed as a direct development dependency so its compatibility tests also run on Windows and Linux, where `appdmg` is optional and skipped. Tests cover buffers, synchronous file reads, background callbacks, missing-file errors, and malformed ICNS input in a child process with a timeout. The macOS CI job also verifies that the installed `appdmg` resolves this adapter and builds an actual DMG.
+
+Both full and production dependency audits are clean as of October 9, 2026. The parser and adapter are development dependencies excluded from the app archive. Recheck the fork and override when the DMG toolchain updates; remove the adapter once upstream provides a compatible patched parser.

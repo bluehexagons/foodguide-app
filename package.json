@@ -23,6 +23,7 @@
     "node": "^22.13.0 || >=24"
   },
   "devDependencies": {
+    "@foodguide/image-size-compat": "file:tools/image-size-compat",
     "@electron-forge/cli": "^8.0.1",
     "@electron-forge/maker-deb": "^8.0.1",
     "@electron-forge/maker-dmg": "^8.0.1",
@@ -41,6 +42,9 @@
     "sharp": "^0.35.5"
   },
   "overrides": {
+    "appdmg": {
+      "image-size": "file:../../tools/image-size-compat"
+    },
     "@reforged/maker-appimage": {
       "@electron-forge/maker-base": "8.0.1"
     }

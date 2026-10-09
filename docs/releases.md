@@ -1,8 +1,8 @@
 # Releases
 
-The Build workflow runs checks, native Electron smoke tests, and Forge builds on Windows and Linux. It runs for `main`, pull requests, and manual dispatches, and uploads artifacts for three days.
+The Build workflow runs checks, dependency audits, native Electron smoke tests, and Forge builds on Windows, Linux, and macOS. It runs for `main`, pull requests, and manual dispatches, and uploads artifacts for three days.
 
-The Release workflow builds the same platforms for version tags and publishes a GitHub release with generated notes and `SHA256SUMS.txt`. macOS DMG packaging is configured for local builds on a Mac and is not part of either CI matrix.
+The Release workflow builds Windows and Linux for version tags and publishes a GitHub release with generated notes and `SHA256SUMS.txt`. macOS DMGs are available as Build workflow artifacts and through local builds on a Mac. They are not published by the Release workflow.
 
 ## Publish a version
 

@@ -47,6 +47,17 @@ async function main() {
   })()`);
   assert(manifest >= 300);
 
+  const mushrooms = await win.webContents.executeJavaScript(`(() => {
+    const input = document.querySelector('#simulator .ingredientpicker');
+    input.value = 'mushroom';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    return Array.from(document.querySelectorAll('#simulator [role="option"]'),
+      element => element.getAttribute('aria-label'));
+  })()`);
+  for (const name of ['Red Cap', 'Green Cap', 'Blue Cap']) {
+    assert(mushrooms.includes(name), `Mushroom search is missing ${name}`);
+  }
+
   for (const ingredient of ['Meat', 'Berries', 'Berries', 'Berries']) {
     await win.webContents.executeJavaScript(`(() => {
       const input = document.querySelector('#simulator .ingredientpicker');
@@ -106,7 +117,7 @@ async function main() {
     (await win.webContents.capturePage()).toPNG(),
   );
   console.log(
-    `Electron smoke passed: ${manifest} sprites, keyboard recipes, saved theme/language, sandbox, blocked popup.`,
+    `Electron smoke passed: ${manifest} sprites, mushroom search, keyboard recipes, saved theme/language, sandbox, blocked popup.`,
   );
 }
 

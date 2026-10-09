@@ -1,0 +1,11 @@
+{
+  "name": "@foodguide/image-size-compat",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Callable CommonJS adapter for appdmg's patched image parser",
+  "main": "index.cjs",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "image-size-next": "1.2.2"
+  }
+}

@@ -28,7 +28,10 @@ export default {
       config: { setupIcon: path.join(import.meta.dirname, '.generated/icon.ico') },
     },
     { name: '@electron-forge/maker-zip', platforms: ['win32'], config: {} },
-    { name: '@electron-forge/maker-dmg', config: { format: 'ULFO' } },
+    {
+      name: '@electron-forge/maker-dmg',
+      config: { format: 'ULFO', icon: path.join(import.meta.dirname, '.generated/icon.icns') },
+    },
     {
       name: '@reforged/maker-appimage',
       config: { options: { icon, categories: ['Game'] } },
