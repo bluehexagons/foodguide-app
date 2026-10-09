@@ -54,4 +54,4 @@ GitHub Actions validates and builds Windows and Linux on pushes to `main`, pull 
 
 ## License and credits
 
-The repository is licensed under [Apache-2.0](LICENSE), as is the embedded [Food Guide](app/foodguide/LICENSE). See the guide's About tab for contributors and game asset credits. Don't Starve and its artwork belong to Klei Entertainment; this project is unofficial.
+The repository is licensed under [Apache-2.0](LICENSE), as is the embedded [Food Guide](https://github.com/bluehexagons/foodguide/blob/main/LICENSE). See the guide's About tab for contributors and game asset credits. Don't Starve and its artwork belong to Klei Entertainment; this project is unofficial.

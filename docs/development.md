@@ -4,15 +4,15 @@ The desktop repository contains the Electron wrapper and build configuration. Th
 
 ## Repository layout
 
-| Path                  | Purpose                                                                                    |
-| --------------------- | ------------------------------------------------------------------------------------------ |
-| `index.js`            | Electron window and application lifecycle                                                  |
-| `lib/`                | Navigation policy and packaging file selection                                             |
-| `forge.config.mjs`    | Makers, asset generation, package verification, and Electron fuses                         |
-| `scripts/`            | Generate sprites/icons, verify packaged assets, and run native smoke tests                 |
-| `tests/`              | Wrapper regression tests and the real Electron smoke test                                  |
-| `app/foodguide/`      | Guide submodule; see its [development documentation](../app/foodguide/docs/development.md) |
-| `.generated/`, `out/` | Ignored generated icons, packages, and test captures                                       |
+| Path                  | Purpose                                                                                                                       |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `index.js`            | Electron window and application lifecycle                                                                                     |
+| `lib/`                | Navigation policy and packaging file selection                                                                                |
+| `forge.config.mjs`    | Makers, asset generation, package verification, and Electron fuses                                                            |
+| `scripts/`            | Generate sprites/icons, verify packaged assets, and run native smoke tests                                                    |
+| `tests/`              | Wrapper regression tests and the real Electron smoke test                                                                     |
+| `app/foodguide/`      | Guide submodule; see its [development documentation](https://github.com/bluehexagons/foodguide/blob/main/docs/development.md) |
+| `.generated/`, `out/` | Ignored generated icons, packages, and test captures                                                                          |
 
 The wrapper loads the bundled entry page with Node integration disabled, context isolation enabled, and renderer sandboxing enabled. It allows navigation to that page and its anchors. Other local files and popups are blocked; credential-free HTTPS links go to the system browser. Squirrel installation events exit before normal startup.
 
