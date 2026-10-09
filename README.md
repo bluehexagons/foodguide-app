@@ -29,7 +29,7 @@ npm run audit
 npm run test:electron
 ```
 
-`check` runs wrapper and guide unit tests, oxlint, oxfmt checks, and strict TypeScript checks for the wrapper, Forge configuration, and guide. `audit` checks both dependency sets. `test:electron` opens the real app with a temporary profile, checks sprites, keyboard recipe entry, saved preferences, and sandbox settings, then closes it. These commands require the two dependency installs above. The Electron test also needs a graphical session; Linux CI uses `xvfb-run -a npm run test:electron`.
+`check` runs wrapper and guide unit tests, oxlint, oxfmt checks, and strict TypeScript checks for the wrapper, Forge configuration, and guide. `audit` checks both dependency sets. `test:electron` opens the real app with a temporary profile, checks sprites, keyboard and mouse ingredient entry, saved preferences, and sandbox settings, then closes it. These commands require the two dependency installs above. The Electron test also needs a graphical session; Linux CI uses `xvfb-run -a npm run test:electron`.
 
 See [development and dependency maintenance](docs/development.md) for the repository layout, submodule updates, and packaging dependency overrides.
 

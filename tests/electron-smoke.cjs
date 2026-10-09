@@ -21,6 +21,20 @@ async function waitFor(win, expression) {
   assert.fail(`Timed out waiting for ${expression}`);
 }
 
+async function clickElement(win, selector) {
+  const position = await win.webContents.executeJavaScript(`(() => {
+    const element = document.querySelector(${JSON.stringify(selector)});
+    if (!element) throw new Error('Missing mouse target');
+    element.scrollIntoView({ block: 'center', behavior: 'instant' });
+    const rect = element.getBoundingClientRect();
+    if (!rect.width || !rect.height) throw new Error('Mouse target is not visible');
+    return { x: Math.round(rect.x + rect.width / 2), y: Math.round(rect.y + rect.height / 2) };
+  })()`);
+  win.webContents.sendInputEvent({ type: 'mouseMove', ...position });
+  win.webContents.sendInputEvent({ type: 'mouseDown', button: 'left', clickCount: 1, ...position });
+  win.webContents.sendInputEvent({ type: 'mouseUp', button: 'left', clickCount: 1, ...position });
+}
+
 async function main() {
   const [, win] = await created;
   await once(win.webContents, 'did-finish-load');
@@ -85,6 +99,20 @@ async function main() {
     "document.querySelector('#ingredients .icon').style.backgroundImage.includes('sprites/sheet-0.png')",
   );
 
+  const warnings = [];
+  const recordWarning = details => {
+    if (['warning', 'error'].includes(details.level)) {
+      warnings.push(details.message);
+    }
+  };
+  win.webContents.on('console-message', recordWarning);
+  await clickElement(win, '#ingredients .ingredient:nth-child(4) .icon');
+  await waitFor(win, "document.querySelectorAll('#ingredients .icon').length === 3");
+  await clickElement(win, '#simulator [role="option"][aria-label="Berries"] .text');
+  await waitFor(win, "document.querySelectorAll('#ingredients .icon').length === 4");
+  win.webContents.removeListener('console-message', recordWarning);
+  assert.deepEqual(warnings, []);
+
   await win.webContents.executeJavaScript(`(() => {
     document.querySelector('#theme-toggle').click();
     const select = document.querySelector('#language-picker');
@@ -117,7 +145,7 @@ async function main() {
     (await win.webContents.capturePage()).toPNG(),
   );
   console.log(
-    `Electron smoke passed: ${manifest} sprites, mushroom search, keyboard recipes, saved theme/language, sandbox, blocked popup.`,
+    `Electron smoke passed: ${manifest} sprites, mushroom search, keyboard recipes, mouse ingredient entry, saved theme/language, sandbox, blocked popup.`,
   );
 }
 
