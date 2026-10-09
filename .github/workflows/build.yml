@@ -47,6 +47,13 @@ jobs:
       - name: Install Food Guide dependencies
         run: npm ci --ignore-scripts --prefix app/foodguide
 
+      - name: Configure Linux Electron sandbox
+        if: runner.os == 'Linux'
+        run: |
+          node -e "require('electron')"
+          sudo chown root:root node_modules/electron/dist/chrome-sandbox
+          sudo chmod 4755 node_modules/electron/dist/chrome-sandbox
+
       - name: Validate the app and embedded Food Guide
         run: npm run check
 

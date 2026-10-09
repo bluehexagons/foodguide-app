@@ -29,7 +29,9 @@ export function verifyPackage(outputPath, platform) {
     'The guide development dependencies must not ship',
   );
   const guideRoot = 'app/foodguide/html/';
-  const manifest = JSON.parse(extractFile(archive, `${guideRoot}img/sprites/sprites.json`));
+  const manifest = JSON.parse(
+    extractFile(archive, path.join(guideRoot, 'img', 'sprites', 'sprites.json')),
+  );
   assert(Object.keys(manifest.images).length > 0, 'The sprite manifest is empty');
   for (const sheet of manifest.sheets) {
     assert(files.includes(`/${guideRoot}${sheet}`), `Missing sprite sheet: ${sheet}`);
