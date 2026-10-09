@@ -25,7 +25,7 @@ For a manual release run, supply an existing version tag. The workflow checks ou
 
 Windows releases contain the Squirrel setup executable and updater files, plus a portable ZIP. Linux releases contain an AppImage and a Debian package. These are architecture-specific builds; the current CI runners produce x64 artifacts.
 
-The checksum file records relative paths below the downloaded artifact directory. To verify a release locally, preserve that directory layout and run `sha256sum --check SHA256SUMS.txt` from its root.
+The publishing job collects artifacts into one directory and rejects duplicate filenames. The checksum file records the filenames used by GitHub release attachments. Download the release files and `SHA256SUMS.txt` into the same directory, keep their original names, and run `sha256sum --check SHA256SUMS.txt` there.
 
 GitHub's automatic source ZIP and tarball do not contain the guide submodule. Use the recursive clone instructions in the [README](../README.md) to build from source.
 

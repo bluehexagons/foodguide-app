@@ -100,15 +100,24 @@ jobs:
           merge-multiple: true
           path: release-assets
 
-      - name: Generate SHA256 checksums
+      - name: Prepare release files and SHA256 checksums
         run: |
-          cd release-assets
+          mkdir release-files
+          while IFS= read -r -d '' file; do
+            destination="release-files/$(basename "$file")"
+            if [[ -e "$destination" ]]; then
+              echo "::error::Duplicate release filename: $destination"
+              exit 1
+            fi
+            cp -- "$file" "$destination"
+          done < <(find release-assets -type f -print0)
+          cd release-files
           find . -type f -print0 | sort -z | xargs -0 sha256sum > ../SHA256SUMS.txt
           cp ../SHA256SUMS.txt .
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
-          files: release-assets/**/*
+          files: release-files/*
           tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
           generate_release_notes: true
