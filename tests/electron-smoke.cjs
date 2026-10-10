@@ -469,9 +469,27 @@ async function main() {
   for (let i = 0; i < 3; i++) {
     await clickElement(win, '#simulator [role=option][data-id="berries@together"] .text');
     await waitFor(win, `document.querySelectorAll('#ingredients .icon').length === ${i + 2}`);
+    assert.equal(
+      await win.webContents.executeJavaScript(
+        'document.querySelector(\'#simulator [data-id="berries@together"] .ingredient-subtract\').getClientRects().length > 0',
+      ),
+      i > 0,
+      'The minus must appear only when multiple copies are selected',
+    );
   }
   await clickElement(win, '#simulator [role=option][aria-label="Berries 3"] .ingredient-subtract');
   await waitFor(win, "document.querySelectorAll('#ingredients .icon').length === 3");
+  await clickElement(win, '#simulator [role=option][aria-label="Berries 2"] .ingredient-subtract');
+  await waitFor(win, "document.querySelectorAll('#ingredients .icon').length === 2");
+  assert.equal(
+    await win.webContents.executeJavaScript(`(() => {
+      const option = document.querySelector('#simulator [data-id="berries@together"]');
+      return option.querySelector('.ingredient-subtract').getClientRects().length === 0 &&
+        option.querySelector('.ingredient-toggle').getClientRects().length > 0;
+    })()`),
+    true,
+    'Returning to one copy must hide the minus and retain the checkbox',
+  );
   await win.webContents.executeJavaScript(
     "document.querySelector('#simulator .ingredientpicker').focus()",
   );
