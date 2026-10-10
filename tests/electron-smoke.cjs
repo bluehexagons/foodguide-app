@@ -476,6 +476,15 @@ async function main() {
       i > 0,
       'The minus must appear only when multiple copies are selected',
     );
+    assert.equal(
+      await win.webContents.executeJavaScript(`(() => {
+        const option = document.querySelector('#simulator [data-id="berries@together"]');
+        return Math.abs(option.getBoundingClientRect().right -
+          option.querySelector('.ingredient-toggle').getBoundingClientRect().right) <= 1.1;
+      })()`),
+      true,
+      'The checkbox must stay at the trailing edge for single and repeated ingredients',
+    );
   }
   await clickElement(win, '#simulator [role=option][aria-label="Berries 3"] .ingredient-subtract');
   await waitFor(win, "document.querySelectorAll('#ingredients .icon').length === 3");

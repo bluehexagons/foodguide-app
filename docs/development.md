@@ -22,7 +22,8 @@ ingredient removal with Space, empty-slot activation, Escape/reopening the picke
 and table sorting with keyboard focus retained. It checks the grouping menu with
 native keyboard input, named result groups, option positions, and selected-only
 removal controls while exercising ingredient shortcuts inside grouped results.
-The minus appears only for multiple pot copies and disappears when one remains.
+The minus appears only for multiple pot copies and disappears when one remains;
+the checkbox stays anchored at the trailing edge in both states.
 Wide pickers stack group cards in columns in one scroll area, reading top to
 bottom and then left to right without gaps beneath shorter cards. Narrow pickers
 stack groups in one column. The native smoke test checks card spacing, reading
