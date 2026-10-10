@@ -403,14 +403,21 @@ async function main() {
     await win.webContents.executeJavaScript(`(() => {
       const picker = document.querySelector('#simulator .ingredientdropdown');
       const groups = [...picker.querySelectorAll('[role=group]')];
-      const first = groups[0].getBoundingClientRect();
-      const second = groups[1].getBoundingClientRect();
-      return Math.abs(first.top - second.top) < 1 && second.left >= first.right &&
+      const rects = groups.map(group => group.getBoundingClientRect());
+      return rects.some(rect => rect.left > rects[0].right) &&
+        rects.every((rect, index) => {
+          if (index === 0) return true;
+          const previous = rects[index - 1];
+          return Math.abs(rect.left - previous.left) < 1
+            ? Math.abs(rect.top - previous.bottom - 12) < 1
+            : rect.left >= previous.right && Math.abs(rect.top - rects[0].top) < 1;
+        }) &&
         picker.scrollWidth === picker.clientWidth &&
-        groups.every(group => getComputedStyle(group).overflowY === 'visible');
+        groups.every(group => group.getClientRects().length === 1 &&
+          getComputedStyle(group).overflowY === 'visible');
     })()`),
     true,
-    'Wide grouped pickers must show cards side by side in one scroll area',
+    'Wide grouped pickers must pack cards in reading order within one scroll area',
   );
   for (let i = 0; i < 4; i++) {
     const scaleBefore = await win.webContents.executeJavaScript('devicePixelRatio');
@@ -419,7 +426,7 @@ async function main() {
   }
   await waitFor(
     win,
-    "getComputedStyle(document.querySelector('#simulator .ingredient-result-groups')).display === 'block'",
+    "getComputedStyle(document.querySelector('#simulator .ingredient-result-groups')).columnWidth === 'auto'",
   );
   assert.equal(
     await win.webContents.executeJavaScript(`(() => {
