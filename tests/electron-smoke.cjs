@@ -486,6 +486,48 @@ async function main() {
       'The checkbox must stay at the trailing edge for single and repeated ingredients',
     );
   }
+  await clickElement(win, '#simulator .displaymodeingredients:not(.densityingredients)');
+  await clickElement(win, '#simulator [role=menuitemradio][data-value=icons]');
+  await waitFor(
+    win,
+    "document.querySelector('#simulator .ingredientdropdown').classList.contains('hidetext')",
+  );
+  for (const density of ['compact', 'normal', 'cozy']) {
+    await clickElement(win, '#simulator .densityingredients');
+    await clickElement(win, `#simulator [role=menuitemradio][data-value="${density}"]`);
+    await waitFor(
+      win,
+      `document.querySelector('#simulator .ingredientdropdown').classList.contains('density-${density}') &&
+        document.querySelector('#simulator .densityingredients').getAttribute('aria-expanded') === 'false'`,
+    );
+    assert.equal(
+      await win.webContents.executeJavaScript(`(() => {
+        const option = document.querySelector('#simulator [role=option][data-id="berries@together"]');
+        const tile = option.getBoundingClientRect();
+        const icon = option.querySelector('.icon').getBoundingClientRect();
+        const checkbox = option.querySelector('.ingredient-toggle').getBoundingClientRect();
+        const minus = option.querySelector('.ingredient-subtract').getBoundingClientRect();
+        return Math.abs(tile.width - tile.height) < 1 &&
+          Math.abs(icon.x + icon.width / 2 - tile.x - tile.width / 2) < 1 &&
+          Math.abs(icon.y + icon.height / 2 - tile.y - tile.height / 2) < 1 &&
+          Math.abs(checkbox.top - minus.top) < 1 && Math.abs(checkbox.top - tile.top) <= 1.1;
+      })()`),
+      true,
+      `${density} icons must use centered square tiles with aligned shortcuts`,
+    );
+  }
+  await clickElement(win, '#simulator .displaymodeingredients:not(.densityingredients)');
+  await clickElement(win, '#simulator [role=menuitemradio][data-value=names]');
+  await waitFor(
+    win,
+    "!document.querySelector('#simulator .ingredientdropdown').classList.contains('hidetext')",
+  );
+  await clickElement(win, '#simulator .densityingredients');
+  await clickElement(win, '#simulator [role=menuitemradio][data-value=compact]');
+  await waitFor(
+    win,
+    "document.querySelector('#simulator .ingredientdropdown').classList.contains('density-compact')",
+  );
   await clickElement(win, '#simulator [role=option][aria-label="Berries 3"] .ingredient-subtract');
   await waitFor(win, "document.querySelectorAll('#ingredients .icon').length === 3");
   await clickElement(win, '#simulator [role=option][aria-label="Berries 2"] .ingredient-subtract');
