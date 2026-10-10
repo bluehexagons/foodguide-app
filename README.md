@@ -11,6 +11,8 @@ Efficiency tables group consecutive combinations for the same recipe, preserving
 their sort order. Expand a recipe to inspect combinations or click its ingredients
 to load the Simulator. Pause calculations to inspect more results, and use
 **Reset filters** to restore the analysis's original filters.
+The progress bar counts all checked combinations, including those without a valid
+recipe, and calculations yield frequently to keep scrolling and pause responsive.
 
 Download Windows and Linux builds from [Releases](https://github.com/bluehexagons/foodguide-app/releases). Windows has a Squirrel installer and a portable ZIP. Linux has an AppImage and a Debian package. Builds target a specific processor architecture; AppImages still require a compatible Linux system.
 

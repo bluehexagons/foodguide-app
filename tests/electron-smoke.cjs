@@ -816,6 +816,14 @@ async function main() {
   );
   const resultTotal = await win.webContents.executeJavaScript('window.analysis.made.length');
   assert(resultTotal > 1000);
+  assert(
+    await win.webContents.executeJavaScript(`(() => {
+      const progress = document.querySelector('#makable progress');
+      const n = document.querySelectorAll('#makable .foodFilter button').length;
+      return progress.value === progress.max && progress.max === n * (n + 1) * (n + 2) * (n + 3) / 24 &&
+        progress.getAttribute('aria-valuetext').includes('(100%)');
+    })()`),
+  );
   await waitFor(win, "document.querySelectorAll('#makable tbody tr').length === 500");
   await clickElement(win, '#makable .showMoreButton');
   await waitFor(win, "document.querySelectorAll('#makable tbody tr').length === 1000");
@@ -954,6 +962,37 @@ async function main() {
   );
   await clickElement(win, '#makable .deleteButton');
   await waitFor(win, "!document.querySelector('#makable .makableContainer')");
+  await clickElement(win, '#tab-statistics');
+  await clickElement(win, '#statistics .makablebutton');
+  await waitFor(win, "document.querySelector('#statistics progress').value >= 10000");
+  await clickElement(win, '#statistics .pauseButton');
+  const pausedProgress = await win.webContents.executeJavaScript(`(() => {
+    const progress = document.querySelector('#statistics progress');
+    return { value: progress.value, max: progress.max };
+  })()`);
+  assert(pausedProgress.value > 0 && pausedProgress.value < pausedProgress.max);
+  assert.equal(
+    await win.webContents.executeJavaScript(
+      "document.querySelector('#statistics progress').getAttribute('aria-label')",
+    ),
+    'Progreso de comprobación de combinaciones',
+  );
+  await clickElement(win, '#statistics .showMoreButton');
+  assert(
+    await win.webContents.executeJavaScript(
+      "document.querySelectorAll('#statistics tbody tr:not(.table-empty-row)').length > 25",
+    ),
+  );
+  await clickElement(win, '#statistics .resetAnalysisFiltersButton');
+  assert.deepEqual(
+    await win.webContents.executeJavaScript(`(() => {
+      const progress = document.querySelector('#statistics progress');
+      return { value: progress.value, max: progress.max };
+    })()`),
+    pausedProgress,
+  );
+  await clickElement(win, '#statistics .deleteButton');
+  await waitFor(win, "!document.querySelector('#statistics .makableContainer')");
   await clickElement(win, '#tab-simulator');
   const reloaded = once(win.webContents, 'did-finish-load');
   win.webContents.reload();

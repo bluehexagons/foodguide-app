@@ -44,6 +44,10 @@ combination to fill the Simulator, and checks exact ingredient keys and immediat
 saved state. Returning retains the Discovery calculation and expanded group.
 It also checks filter resets through native keyboard input and localized matching
 counts without losing the loaded limit.
+Analyzer work yields between combinations with a 16 ms target and reports checked
+input combinations separately from valid outcomes. The native smoke test checks
+completed progress, pauses a larger Statistics run, loads more results, verifies
+that resetting filters leaves progress unchanged, and clears the run.
 Cooking views retain selected food, explain fully and partially hidden search
 matches, and offer Show all recovery that preserves the query and restores search
 focus. The native smoke test verifies recovery and its saved view preference.
