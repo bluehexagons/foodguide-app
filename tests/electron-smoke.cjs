@@ -22,12 +22,25 @@ async function waitFor(win, expression) {
     hasFocus: document.hasFocus(),
     activeElement: document.activeElement?.outerHTML.slice(0, 400),
     width: innerWidth,
+    scrollKeys: window.scrollKeyEvents,
+    scrollRegions: [...document.querySelectorAll('.table-scroll-wrapper[tabindex="0"]')].map(region => ({
+      label: region.getAttribute('aria-label'),
+      left: region.scrollLeft,
+      width: region.clientWidth,
+      contentWidth: region.scrollWidth,
+    })),
     sortedHeaders: [...document.querySelectorAll('th[aria-sort]')].map(header => ({
       key: header.dataset.sort,
       direction: header.getAttribute('aria-sort'),
     })),
   })`);
-  assert.fail(`Timed out waiting for ${expression}\n${JSON.stringify(focus)}`);
+  assert.fail(
+    `Timed out waiting for ${expression}\n${JSON.stringify({
+      windowFocused: win.isFocused(),
+      contentsFocused: win.webContents.isFocused(),
+      ...focus,
+    })}`,
+  );
 }
 
 async function clickElement(win, selector) {
@@ -300,11 +313,19 @@ async function main() {
     `document.querySelector(${JSON.stringify(cookTimeHeader)}).classList.contains('col-hidden')`,
   );
   await waitFor(win, "document.querySelector('#results .table-scroll-wrapper').tabIndex === 0");
-  await win.webContents.executeJavaScript(`(() => {
+  await win.webContents.executeJavaScript(`(async () => {
     const wrapper = document.querySelector('#results .table-scroll-wrapper');
     wrapper.scrollLeft = 0;
+    window.scrollKeyEvents = [];
+    wrapper.addEventListener('keydown', event => window.scrollKeyEvents.push(event.key));
     wrapper.focus();
+    // Column changes and focus scrolling must reach the compositor before native key injection.
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   })()`);
+  await waitFor(
+    win,
+    "document.hasFocus() && document.activeElement === document.querySelector('#results .table-scroll-wrapper')",
+  );
   win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Right' });
   win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Right' });
   await waitFor(win, "document.querySelector('#results .table-scroll-wrapper').scrollLeft > 0");
