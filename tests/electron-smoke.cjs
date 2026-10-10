@@ -179,7 +179,7 @@ async function main() {
     win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Down' });
     await waitFor(
       win,
-      `document.querySelector('#simulator [role="option"][aria-selected="true"]')?.getAttribute('aria-label') === ${JSON.stringify(ingredient)}`,
+      `document.querySelector('#simulator [role="option"][aria-selected="true"] .text')?.textContent === ${JSON.stringify(ingredient)}`,
     );
     win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Return' });
     win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Return' });
@@ -188,14 +188,15 @@ async function main() {
   await waitFor(win, "document.querySelectorAll('#ingredients .icon').length === 4");
   assert.deepEqual(
     await win.webContents.executeJavaScript(`(() => {
-      const berries = document.querySelector('#simulator [role=option][aria-label="Berries"]');
+      const berries = document.querySelector('#simulator [role=option][aria-label="Berries 3"]');
       return {
         picked: berries.classList.contains('faded'),
         count: berries.querySelector('.ingredient-picked-marker').textContent,
         description: berries.getAttribute('aria-description'),
+        name: berries.getAttribute('aria-label'),
       };
     })()`),
-    { picked: true, count: '3', description: 'In the pot: 3.' },
+    { picked: true, count: '3', description: 'In the pot: 3.', name: 'Berries 3' },
   );
   await waitFor(
     win,
@@ -262,7 +263,7 @@ async function main() {
   })()`);
   assert.equal(
     await win.webContents.executeJavaScript(
-      'document.querySelector(\'#simulator [role=option][aria-label="Berries"] .ingredient-picked-marker\').textContent',
+      'document.querySelector(\'#simulator [role=option][aria-label="Berries 3"] .ingredient-picked-marker\').textContent',
     ),
     '3',
     'A search rebuild must retain the picked quantity',
@@ -283,7 +284,7 @@ async function main() {
   win.webContents.on('console-message', recordWarning);
   await clickElement(win, '#ingredients .ingredient:nth-child(4) .icon');
   await waitFor(win, "document.querySelectorAll('#ingredients .icon').length === 3");
-  await clickElement(win, '#simulator [role="option"][aria-label="Berries"] .text');
+  await clickElement(win, '#simulator [role="option"][aria-label="Berries 2"] .text');
   await waitFor(win, "document.querySelectorAll('#ingredients .icon').length === 4");
   win.webContents.removeListener('console-message', recordWarning);
   assert.deepEqual(warnings, []);
