@@ -409,6 +409,78 @@ async function main() {
     'Added Berries.',
   );
 
+  assert.deepEqual(
+    await win.webContents.executeJavaScript(
+      "JSON.parse(localStorage.getItem('foodGuideState')).pickers[0]",
+    ),
+    ['meat@together', 'berries@together', 'berries@together', 'berries@together'],
+  );
+  await clickElement(win, '#tab-discovery');
+  await waitFor(
+    win,
+    "JSON.parse(localStorage.getItem('foodGuideState')).activeTab === 'discovery'",
+  );
+  const inventoryNames = [
+    'Meat',
+    'Berries',
+    'Carrot',
+    'Honey',
+    'Twigs',
+    'Ice',
+    'Egg',
+    'Monster Meat',
+    'Banana',
+    'Pumpkin',
+    'Toma Root',
+    'Potato',
+    'Eggplant',
+  ];
+  for (const [index, ingredient] of inventoryNames.entries()) {
+    await win.webContents.executeJavaScript(`(() => {
+      const input = document.querySelector('#discovery .ingredientpicker');
+      input.focus();
+      input.value = ${JSON.stringify(ingredient)};
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    })()`);
+    win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Return' });
+    win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Return' });
+    await waitFor(
+      win,
+      `JSON.parse(localStorage.getItem('foodGuideState')).pickers[1].length === ${index + 1}`,
+    );
+  }
+  await clickElement(win, '#makable .makablebutton');
+  await waitFor(win, "!document.querySelector('#makable .makablebutton').disabled");
+  const resultTotal = await win.webContents.executeJavaScript('window.analysis.made.length');
+  assert(resultTotal > 1000);
+  await waitFor(win, "document.querySelectorAll('#makable tbody tr').length === 500");
+  await clickElement(win, '#makable .showMoreButton');
+  await waitFor(win, "document.querySelectorAll('#makable tbody tr').length === 1000");
+  await clickElement(win, '#makable .recipeFilter button:has([title="Meatballs"])');
+  await waitFor(win, "document.querySelector('#makable .showMoreButton').hidden");
+  assert(
+    await win.webContents.executeJavaScript(`(() => {
+    const rows = [...document.querySelectorAll('#makable tbody tr')];
+    return rows.length > 0 && rows.length < 500 && rows.every(row => row.cells[1].textContent === 'Meatballs');
+  })()`),
+  );
+  // Cycle the recipe through excluded and back to normal, preserving the expanded limit.
+  const recipe = '#makable .recipeFilter button:has([title="Meatballs"])';
+  await win.webContents.executeJavaScript(
+    `document.querySelector(${JSON.stringify(recipe)}).focus()`,
+  );
+  for (const state of ['excluded', 'normal']) {
+    win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Space' });
+    win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Space' });
+    await waitFor(
+      win,
+      `document.querySelector(${JSON.stringify(recipe)}).getAttribute('aria-label') === 'Meatballs: ${state === 'excluded' ? 'Excluded' : 'Normal'}'`,
+    );
+  }
+  await waitFor(
+    win,
+    "document.querySelectorAll('#makable tbody tr').length === 1000 && !document.querySelector('#makable .showMoreButton').hidden",
+  );
   await win.webContents.executeJavaScript(`(() => {
     document.querySelector('#theme-toggle').click();
     const select = document.querySelector('#language-picker');
@@ -419,6 +491,15 @@ async function main() {
     "document.documentElement.getAttribute('data-theme')",
   );
   assert.equal(await win.webContents.executeJavaScript('document.documentElement.lang'), 'es');
+  assert.equal(
+    await win.webContents.executeJavaScript(
+      "document.querySelector('#makable .showMoreButton').textContent",
+    ),
+    `Mostrar más resultados (1000 de ${resultTotal})`,
+  );
+  await clickElement(win, '#makable .deleteButton');
+  await waitFor(win, "!document.querySelector('#makable .makableContainer')");
+  await clickElement(win, '#tab-simulator');
   const reloaded = once(win.webContents, 'did-finish-load');
   win.webContents.reload();
   await reloaded;
@@ -429,6 +510,18 @@ async function main() {
   assert.equal(
     await win.webContents.executeJavaScript("document.documentElement.getAttribute('data-theme')"),
     theme,
+  );
+  assert.equal(
+    await win.webContents.executeJavaScript(
+      "document.querySelectorAll('#ingredients [data-id]').length",
+    ),
+    4,
+  );
+  assert.equal(
+    await win.webContents.executeJavaScript(
+      "document.querySelectorAll('#inventory [data-id]').length",
+    ),
+    inventoryNames.length,
   );
   await win.webContents.executeJavaScript("window.open('file:///unrelated-file.htm')");
   await delay(100);
@@ -441,7 +534,7 @@ async function main() {
     (await win.webContents.capturePage()).toPNG(),
   );
   console.log(
-    `Electron smoke passed: ${manifest} sprites, native zoom menus and shortcuts, search and full-pot feedback, mushroom search, keyboard recipes, ingredient removal, picker dismissal, tab navigation, mouse ingredient entry, keyboard table sorting, column selection and focus recovery at 200% zoom, horizontal scrolling, saved theme/language, sandbox, blocked popup.`,
+    `Electron smoke passed: ${manifest} sprites, native zoom menus and shortcuts, search and full-pot feedback, mushroom search, keyboard recipes, ingredient removal, picker dismissal, tab navigation, mouse ingredient entry, keyboard table sorting, column selection and focus recovery at 200% zoom, horizontal scrolling, immediate saved selections, Discovery filtering and localized pagination, saved theme/language and ingredients after reload, sandbox, blocked popup.`,
   );
 }
 

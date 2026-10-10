@@ -13,13 +13,17 @@ tables. Manual column selections override Auto while retaining the other visible
 columns. Resizing or zooming moves focus out of hidden cells to their column
 buttons. Analysis exposes bounded partial results when paused and gives localized
 feedback when no results match the filters. Changing language preserves Discovery
-calculations and filters. Run it with
+calculations and filters. Completed-result pagination follows filters and language
+changes while retaining the expanded limit. Ingredient, tab, and game changes
+save immediately, so recovery does not depend on a normal page unload. Run it with
 `npm --prefix app/foodguide run test:browser` after installing Chromium in that
 checkout. The native Electron smoke test separately exercises arrow-key tabs,
 ingredient removal with Space, empty-slot activation, Escape/reopening the picker,
 and table sorting with keyboard focus retained. It also checks empty-search status
 feedback, visible full-pot error recovery, manual column selection, focus recovery,
-and horizontal table scrolling at 200% zoom. Focused table regions handle
+and horizontal table scrolling at 200% zoom. It also exercises a larger Discovery
+inventory, filtered and localized pagination, immediate selection saves, and
+restored ingredients after reload. Focused table regions handle
 unmodified Left/Right directly; table buttons retain their own keyboard behavior.
 
 Native File/Edit/View/Window menus preserve platform keyboard and accessibility
