@@ -160,6 +160,43 @@ async function main() {
     "document.querySelector('#ingredients .icon').style.backgroundImage.includes('sprites/sheet-0.png')",
   );
 
+  await win.webContents.executeJavaScript(`(() => {
+    const input = document.querySelector('#simulator .ingredientpicker');
+    input.focus();
+    input.value = 'Carrot';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  })()`);
+  win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Down' });
+  win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Down' });
+  await waitFor(
+    win,
+    "document.querySelector('#simulator [role=option][aria-selected=true]')?.getAttribute('aria-label') === 'Carrot'",
+  );
+  win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Return' });
+  win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Return' });
+  await waitFor(
+    win,
+    "document.querySelector('#simulator [role=status]').textContent === 'The pot is full. Remove an ingredient before adding Carrot.'",
+  );
+  assert.equal(
+    await win.webContents.executeJavaScript(`(() => {
+      const status = document.querySelector('#simulator [role=status]');
+      return getComputedStyle(status).clipPath === 'none' && status.clientWidth > 10 && status.clientHeight > 10;
+    })()`),
+    true,
+  );
+  await win.webContents.executeJavaScript(`(() => {
+    const input = document.querySelector('#simulator .ingredientpicker');
+    input.value = 'Berries';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  })()`);
+  assert.equal(
+    await win.webContents.executeJavaScript(
+      "document.querySelector('#simulator [role=status]').classList.contains('ingredient-feedback')",
+    ),
+    false,
+  );
+
   const warnings = [];
   const recordWarning = details => {
     if (['warning', 'error'].includes(details.level)) {
@@ -310,7 +347,7 @@ async function main() {
     (await win.webContents.capturePage()).toPNG(),
   );
   console.log(
-    `Electron smoke passed: ${manifest} sprites, native zoom menus and shortcuts, search feedback, mushroom search, keyboard recipes, ingredient removal, picker dismissal, tab navigation, mouse ingredient entry, keyboard table sorting and scrolling at 200% zoom, saved theme/language, sandbox, blocked popup.`,
+    `Electron smoke passed: ${manifest} sprites, native zoom menus and shortcuts, search and full-pot feedback, mushroom search, keyboard recipes, ingredient removal, picker dismissal, tab navigation, mouse ingredient entry, keyboard table sorting and scrolling at 200% zoom, saved theme/language, sandbox, blocked popup.`,
   );
 }
 

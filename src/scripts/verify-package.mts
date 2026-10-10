@@ -19,6 +19,7 @@ export function verifyPackage(outputPath: string, platform: string) {
     '/app/foodguide/html/index.htm',
     '/app/foodguide/html/index.html',
     '/app/foodguide/html/style/main.css',
+    '/app/foodguide/html/style/accessibility.css',
     '/app/foodguide/html/icon.png',
     '/node_modules/electron-squirrel-startup/index.js',
   ]) {

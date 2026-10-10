@@ -14,6 +14,7 @@ const fixtureFiles = {
   'app/foodguide/html/index.html': '',
   'app/foodguide/html/icon.png': '',
   'app/foodguide/html/style/main.css': '',
+  'app/foodguide/html/style/accessibility.css': '',
   'app/foodguide/html/foodguide.js': "export * from './food.js'; import './locales/index.js';",
   'app/foodguide/html/legacy-browser-warning.js': '',
   'app/foodguide/html/food.js': `import './collection.js'; import './preferences.js';
@@ -73,6 +74,15 @@ test('package verification rejects missing sprite sheets', async t => {
   const { verifyPackage } = await import('../dist/scripts/verify-package.mjs');
   const output = await createArchive(t, { omit: 'app/foodguide/html/img/sprites/sheet-0.png' });
   assert.throws(() => verifyPackage(output, 'linux'), /Missing sprite sheet/);
+});
+
+test('package verification rejects a missing accessibility stylesheet', async t => {
+  const { verifyPackage } = await import('../dist/scripts/verify-package.mjs');
+  const output = await createArchive(t, { omit: 'app/foodguide/html/style/accessibility.css' });
+  assert.throws(
+    () => verifyPackage(output, 'linux'),
+    /Missing packaged file: .*accessibility\.css/,
+  );
 });
 
 for (const filename of ['food.d.ts', 'food.ts', 'food.js.map']) {
