@@ -319,13 +319,17 @@ async function main() {
       'Cooking filters must explain hidden matches without changing the selected pot',
     );
   }
-  await clickElement(win, '#simulator .cookingingredients');
-  await waitFor(
-    win,
-    "document.querySelector('#simulator .cookingingredients').getAttribute('aria-expanded') === 'true'",
-  );
-  await clickElement(win, '#simulator [role=menuitemradio][data-value=all]');
+  await clickElement(win, '#simulator .ingredient-show-all');
   await waitFor(win, "document.querySelectorAll('#simulator [role=option]').length === 1");
+  assert.equal(
+    await win.webContents.executeJavaScript(`(() => {
+      const input = document.querySelector('#simulator .ingredientpicker');
+      return input === document.activeElement && input.value === 'goatmilk' &&
+        document.querySelectorAll('#ingredients .icon').length === 4;
+    })()`),
+    true,
+    'Recovery must preserve the query and selected pot and return focus to search',
+  );
   await clickElement(win, '#simulator .cookingingredients');
   await waitFor(
     win,
@@ -339,13 +343,27 @@ async function main() {
     ),
     'everyday',
   );
-  await clickElement(win, '#simulator .cookingingredients');
-  await waitFor(
-    win,
-    "document.querySelector('#simulator .cookingingredients').getAttribute('aria-expanded') === 'true'",
+  await win.webContents.executeJavaScript(`(() => {
+    const input = document.querySelector('#simulator .ingredientpicker');
+    input.value = 'Butter';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  })()`);
+  assert.equal(
+    await win.webContents.executeJavaScript(`(() => {
+      return document.querySelectorAll('#simulator [role=option]').length === 1 &&
+        document.querySelector('#simulator .ingredient-search-summary').textContent.includes('1 hidden by cooking view.');
+    })()`),
+    true,
+    'Partially filtered native searches must disclose hidden matches',
   );
-  await clickElement(win, '#simulator [role=menuitemradio][data-value=all]');
-  await waitFor(win, "document.querySelectorAll('#simulator [role=option]').length === 1");
+  await clickElement(win, '#simulator .ingredient-show-all');
+  await waitFor(win, "document.querySelectorAll('#simulator [role=option]').length === 2");
+  assert.equal(
+    await win.webContents.executeJavaScript(
+      "JSON.parse(localStorage.getItem('foodGuideCookingPreference'))[0]",
+    ),
+    'all',
+  );
   await win.webContents.executeJavaScript(`(() => {
     const input = document.querySelector('#simulator .ingredientpicker');
     input.value = 'Berries';

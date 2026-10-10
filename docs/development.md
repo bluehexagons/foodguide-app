@@ -22,6 +22,9 @@ ingredient removal with Space, empty-slot activation, Escape/reopening the picke
 and table sorting with keyboard focus retained. It checks the grouping menu with
 native keyboard input, named result groups, option positions, and selected-only
 removal controls while exercising ingredient shortcuts inside grouped results.
+Cooking views retain selected food, explain fully and partially hidden search
+matches, and offer Show all recovery that preserves the query and restores search
+focus. The native smoke test verifies recovery and its saved view preference.
 It also checks empty-search status
 feedback, visible full-pot error recovery, manual column selection, focus recovery,
 and horizontal table scrolling at 200% zoom. It also exercises a larger Discovery
