@@ -824,28 +824,185 @@ async function main() {
         progress.getAttribute('aria-valuetext').includes('(100%)');
     })()`),
   );
-  await waitFor(win, "document.querySelectorAll('#makable tbody tr').length === 500");
-  await clickElement(win, '#makable .showMoreButton');
-  await waitFor(win, "document.querySelectorAll('#makable tbody tr').length === 1000");
-  await clickElement(win, '#makable .recipeFilter button:has([title="Meatballs"])');
-  await waitFor(win, "document.querySelector('#makable .showMoreButton').hidden");
+  await waitFor(win, "document.querySelectorAll('#makable tbody tr[data-recipe]').length === 25");
   assert(
     await win.webContents.executeJavaScript(`(() => {
-    const rows = [...document.querySelectorAll('#makable tbody tr')];
-    return rows.length > 0 && rows.length < 500 && rows.every(row => row.cells[1].textContent === 'Meatballs');
-  })()`),
+      const navs = [...document.querySelectorAll('#makable .table-pagination.table-group-pagination')];
+      return navs.length === 2 && navs.every(nav =>
+        nav.querySelector('[data-table-action="page-next"]') &&
+        nav.querySelector('.table-page-range')?.textContent &&
+        nav.querySelector('.table-page-count')?.textContent === 'Page 1 of ' +
+          nav.querySelector('.table-page-count')?.textContent.match(/Page 1 of (\\d+)/)?.[1]);
+    })()`),
+  );
+  const overviewPages = await win.webContents.executeJavaScript(`(() => {
+    const count = document.querySelector('#makable .table-group-pagination .table-page-count').textContent;
+    return Number(count.match(/Page 1 of (\\d+)/)[1]);
+  })()`);
+  assert(overviewPages > 1);
+  await clickElement(win, '#makable .table-group-pagination [data-table-action="page-next"]');
+  await waitFor(
+    win,
+    "document.querySelector('#makable .table-group-pagination .table-page-count').textContent === 'Page 2 of ' + " +
+      overviewPages,
+  );
+  await clickElement(win, '#makable .table-group-pagination [data-table-action="page-previous"]');
+  await waitFor(
+    win,
+    "document.querySelector('#makable .table-group-pagination .table-page-count').textContent === 'Page 1 of ' + " +
+      overviewPages,
+  );
+  await clickElement(win, '#makable .table-group-pagination [data-table-action="page-last"]');
+  await waitFor(
+    win,
+    `document.querySelector('#makable .table-group-pagination .table-page-count').textContent === 'Page ${overviewPages} of ${overviewPages}'`,
+  );
+  await win.webContents.executeJavaScript(`(() => {
+    const pager = document.querySelector('#makable .table-group-pagination');
+    const input = pager.querySelector('[data-table-action="page-number"]');
+    input.focus();
+    input.value = '2';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  })()`);
+  win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Return' });
+  win.webContents.sendInputEvent({ type: 'char', keyCode: '\r' });
+  win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Return' });
+  await waitFor(
+    win,
+    "document.querySelector('#makable .table-group-pagination .table-page-count').textContent === 'Page 2 of ' + " +
+      overviewPages,
+  );
+  await clickElement(win, '#makable .table-group-pagination [data-table-action="page-first"]');
+  await waitFor(
+    win,
+    "document.querySelector('#makable .table-group-pagination .table-page-count').textContent === 'Page 1 of ' + " +
+      overviewPages,
+  );
+  await clickElement(win, '#makable .table-group-pagination [data-table-action="page-last"]');
+  await waitFor(
+    win,
+    `document.querySelector('#makable .table-group-pagination .table-page-count').textContent === 'Page ${overviewPages} of ${overviewPages}'`,
+  );
+  const mainPageSummary = await win.webContents.executeJavaScript(`(() => {
+    const pager = document.querySelector('#makable .table-group-pagination');
+    const range = pager.querySelector('.table-page-range').textContent;
+    return {
+      range,
+      bounds: range.match(/Recipe groups (\\d+)–(\\d+) of (\\d+)/)?.slice(1).map(Number),
+      groups: document.querySelectorAll('#makable tbody tr[data-recipe]').length,
+      rows: document.querySelectorAll('#makable tbody tr').length,
+    };
+  })()`);
+  assert(mainPageSummary.groups > 0 && mainPageSummary.groups <= 25);
+  assert(mainPageSummary.rows <= 50);
+  assert.deepEqual(mainPageSummary.bounds?.slice(0, 2), [
+    (overviewPages - 1) * 25 + 1,
+    (overviewPages - 1) * 25 + mainPageSummary.groups,
+  ]);
+  await win.webContents.executeJavaScript(`(() => {
+    const input = document.querySelector('#makable .table-group-pagination [data-table-action="page-number"]');
+    input.focus();
+    input.value = '2';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  })()`);
+  await clickElement(win, '#makable .table-group-pagination [data-table-action="page-go"]');
+  await waitFor(
+    win,
+    "document.querySelector('#makable .table-group-pagination .table-page-count').textContent === 'Page 2 of ' + " +
+      overviewPages,
+  );
+  await clickElement(win, '#makable th[data-sort="name"] button');
+  await waitFor(
+    win,
+    "document.querySelector('#makable th[data-sort=\"name\"]').getAttribute('aria-sort') === 'ascending'",
+  );
+  await clickElement(win, '#makable .recipeFilter button:has([title="Meatballs"])');
+  await waitFor(win, "document.querySelectorAll('#makable tbody tr[data-recipe]').length > 0");
+  const groupRecipeId = 'meatballs_dst';
+  assert(
+    await win.webContents.executeJavaScript(`(() => {
+      const rows = [...document.querySelectorAll('#makable tbody tr[data-recipe]')];
+      return rows.length > 0 && rows.length <= 25 && rows.every(row => row.dataset.recipe === '${groupRecipeId}');
+    })()`),
   );
   const groupToggle = '#makable .table-group-toggle';
+  const expectedGroupCount = await win.webContents.executeJavaScript(
+    `window.analysis.made.filter(result => result.recipe.id === '${groupRecipeId}').length`,
+  );
+  const groupCount = await win.webContents.executeJavaScript(
+    `Number(document.querySelector(${JSON.stringify(groupToggle)}).dataset.count)`,
+  );
+  assert.equal(groupCount, expectedGroupCount);
+  assert(groupCount > 25);
   await clickElement(win, groupToggle);
   await waitFor(
     win,
     `document.querySelector(${JSON.stringify(groupToggle)}).getAttribute('aria-expanded') === 'true'`,
+  );
+  assert(
+    await win.webContents.executeJavaScript(`(() => {
+      const toggle = document.querySelector(${JSON.stringify(groupToggle)});
+      const ids = toggle.getAttribute('aria-controls').split(/\\s+/);
+      const details = document.getElementById(ids[0]);
+      const pager = document.getElementById(ids.at(-1));
+      return ids.length === 25 && details?.dataset.recipe === '${groupRecipeId}' &&
+        pager?.classList.contains('table-group-pager') &&
+        Number(toggle.dataset.count) === ${groupCount} &&
+        document.querySelectorAll('#makable tbody tr[data-recipe="${groupRecipeId}"]').length === 25 &&
+        document.querySelectorAll('#makable tbody tr:not(.table-group-pager)').length <= 25;
+    })()`),
+  );
+  await clickElement(win, '#makable .table-combination-pagination [data-table-action="page-last"]');
+  await waitFor(
+    win,
+    "document.querySelector('#makable .table-combination-pagination .table-page-count').textContent.startsWith('Page ') && " +
+      "document.querySelector('#makable .table-combination-pagination .table-page-count').textContent !== 'Page 1 of 1'",
+  );
+  const lastCombinationPage = await win.webContents.executeJavaScript(`(() => {
+    const pager = document.querySelector('#makable .table-combination-pagination');
+    const rows = [...document.querySelectorAll('#makable tbody tr[data-recipe="${groupRecipeId}"]')];
+    const toggle = document.querySelector(${JSON.stringify(groupToggle)});
+    const header = toggle.closest('tr');
+    const button = header.querySelector('.analysis-ingredients');
+    const count = Number(toggle.dataset.count);
+    const page = Number(pager.querySelector('.table-page-count').textContent.match(/Page (\\d+) of (\\d+)/)[1]);
+    const pages = Number(pager.querySelector('.table-page-count').textContent.match(/Page (\\d+) of (\\d+)/)[2]);
+    const range = pager.querySelector('.table-page-range').textContent;
+    return {
+      rows: rows.length,
+      page,
+      pages,
+      count,
+      range,
+      bounds: range.match(/Combinations (\\d+)–(\\d+) of (\\d+)/)?.slice(1).map(Number),
+      ids: [...button.querySelectorAll('.icon')].map(icon => icon.dataset.id),
+    };
+  })()`);
+  assert.equal(lastCombinationPage.count, groupCount);
+  assert.equal(lastCombinationPage.page, lastCombinationPage.pages);
+  assert(lastCombinationPage.rows <= 25 && lastCombinationPage.rows >= 1);
+  assert.deepEqual(lastCombinationPage.bounds, [
+    (lastCombinationPage.page - 1) * 25 + 1,
+    groupCount,
+    groupCount,
+  ]);
+  await win.webContents.executeJavaScript(
+    `document.querySelector(${JSON.stringify(groupToggle)}).focus()`,
   );
   win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Space' });
   win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Space' });
   await waitFor(
     win,
     `document.querySelector(${JSON.stringify(groupToggle)}).getAttribute('aria-expanded') === 'false'`,
+  );
+  assert(
+    await win.webContents.executeJavaScript(`(() => {
+      const toggle = document.querySelector(${JSON.stringify(groupToggle)});
+      const ids = toggle.getAttribute('aria-controls').split(/\\s+/);
+      const pager = document.getElementById(ids[0]);
+      return ids.length === 1 && pager?.classList.contains('table-group-pager') && pager.hidden &&
+        document.querySelectorAll('#makable tbody tr[data-recipe="${groupRecipeId}"]').length === 1;
+    })()`),
   );
   win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Return' });
   win.webContents.sendInputEvent({ type: 'char', keyCode: '\r' });
@@ -854,12 +1011,16 @@ async function main() {
     win,
     `document.querySelector(${JSON.stringify(groupToggle)}).getAttribute('aria-expanded') === 'true'`,
   );
+  await waitFor(
+    win,
+    `document.querySelector('#makable .table-combination-pagination .table-page-count').textContent === 'Page ${lastCombinationPage.page} of ${lastCombinationPage.pages}'`,
+  );
   const analysisCombination = await win.webContents.executeJavaScript(`(() => {
-    const rowId = document.querySelector(${JSON.stringify(groupToggle)}).getAttribute('aria-controls').split(' ')[0];
-    const button = document.getElementById(rowId).querySelector('.analysis-ingredients');
+    const button = document.querySelector(${JSON.stringify(groupToggle)}).closest('tr').querySelector('.analysis-ingredients');
     button.focus();
     return [...button.querySelectorAll('.icon')].map(icon => icon.dataset.id);
   })()`);
+  assert.deepEqual(analysisCombination, lastCombinationPage.ids);
   win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Return' });
   win.webContents.sendInputEvent({ type: 'char', keyCode: '\r' });
   win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Return' });
@@ -907,10 +1068,13 @@ async function main() {
   }
   await waitFor(
     win,
-    "document.querySelectorAll('#makable tbody tr').length === 1000 && !document.querySelector('#makable .showMoreButton').hidden",
+    "document.querySelectorAll('#makable tbody tr[data-recipe]').length > 0 && document.querySelector('#makable .table-group-pagination .table-page-count').textContent.startsWith('Page 1 of')",
   );
   await clickElement(win, recipe);
-  await waitFor(win, "document.querySelector('#makable .showMoreButton').hidden");
+  await waitFor(
+    win,
+    "document.querySelector('#makable .analysis-result-count').textContent.includes('Recipe groups')",
+  );
   await win.webContents.executeJavaScript(
     "document.querySelector('#makable .resetAnalysisFiltersButton').focus()",
   );
@@ -918,7 +1082,7 @@ async function main() {
   win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Space' });
   await waitFor(
     win,
-    "document.querySelectorAll('#makable tbody tr').length === 1000 && !document.querySelector('#makable .showMoreButton').hidden",
+    "document.querySelectorAll('#makable tbody tr[data-recipe]').length > 0 && document.querySelector('#makable .table-group-pagination .table-page-count').textContent.startsWith('Page 1 of')",
   );
   assert.equal(
     await win.webContents.executeJavaScript(
@@ -926,11 +1090,23 @@ async function main() {
     ),
     true,
   );
+  const englishResultCount = await win.webContents.executeJavaScript(`(() => {
+    const countText = document.querySelector('#makable .analysis-result-count').textContent.match(/; ([\\d,]+) matching combinations\\./)?.[1];
+    const count = Number(countText?.replace(/\\D/g, ''));
+    const range = document.querySelector('#makable .table-group-pagination .table-page-range').textContent;
+    const groups = new Set(window.analysis.made.map(result => result.recipe.id)).size;
+    return { count, range, groups };
+  })()`);
+  assert.equal(englishResultCount.count, resultTotal);
+  assert.equal(englishResultCount.groups, Number(englishResultCount.range.match(/of (\d+)$/)?.[1]));
   assert.equal(
     await win.webContents.executeJavaScript(
       "document.querySelector('#makable .analysis-result-count').textContent",
     ),
-    `Loaded 1000 of ${resultTotal} matching combinations.`,
+    `Recipe groups 1–${englishResultCount.groups} of ${englishResultCount.groups}; ${resultTotal} matching combinations.`,
+  );
+  await win.webContents.executeJavaScript(
+    "document.querySelector('#makable .resetAnalysisFiltersButton').focus()",
   );
   await win.webContents.executeJavaScript(`(() => {
     document.querySelector('#theme-toggle').click();
@@ -944,15 +1120,21 @@ async function main() {
   assert.equal(await win.webContents.executeJavaScript('document.documentElement.lang'), 'es');
   assert.equal(
     await win.webContents.executeJavaScript(
-      "document.querySelector('#makable .showMoreButton').textContent",
+      'document.activeElement === document.querySelector("#makable .resetAnalysisFiltersButton")',
     ),
-    `Mostrar más resultados (1000 de ${resultTotal})`,
+    true,
   );
   assert.equal(
     await win.webContents.executeJavaScript(
       "document.querySelector('#makable .analysis-result-count').textContent",
     ),
-    `Se cargaron 1000 de ${resultTotal} combinaciones coincidentes.`,
+    await win.webContents.executeJavaScript(`(() => {
+      const countText = document.querySelector('#makable .analysis-result-count').textContent.match(/; ([\\d.,]+) combinaciones coincidentes\\./)?.[1];
+      const count = Number(countText?.replace(/\\D/g, ''));
+      const groups = new Set(window.analysis.made.map(result => result.recipe.id)).size;
+      if (count !== ${resultTotal}) return '';
+      return 'Grupos de recetas 1–' + groups + ' de ' + groups + '; ' + count + ' combinaciones coincidentes.';
+    })()`),
   );
   assert.equal(
     await win.webContents.executeJavaScript(
@@ -977,10 +1159,17 @@ async function main() {
     ),
     'Progreso de comprobación de combinaciones',
   );
-  await clickElement(win, '#statistics .showMoreButton');
+  await waitFor(
+    win,
+    "document.querySelector('#statistics .table-group-pagination .table-page-count')?.textContent.startsWith('Página 1 de')",
+  );
+  const statisticsPages = await win.webContents.executeJavaScript(`Number(
+    document.querySelector('#statistics .table-group-pagination .table-page-count').textContent.match(/Página 1 de (\\d+)/)[1]
+  )`);
+  assert(statisticsPages >= 1);
   assert(
     await win.webContents.executeJavaScript(
-      "document.querySelectorAll('#statistics tbody tr:not(.table-empty-row)').length > 25",
+      "document.querySelectorAll('#statistics tbody tr[data-recipe]').length <= 25",
     ),
   );
   await clickElement(win, '#statistics .resetAnalysisFiltersButton');
