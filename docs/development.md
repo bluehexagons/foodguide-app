@@ -11,15 +11,23 @@ localized search feedback, persistent ingredient error explanations, non-color
 selection indicators, forced-color display, and keyboard scrolling of named
 tables. Manual column selections override Auto while retaining the other visible
 columns. Resizing or zooming moves focus out of hidden cells to their column
-buttons. Analysis exposes bounded partial results when paused and gives localized
-feedback when no results match the filters. Changing language preserves Discovery
-calculations and filters. Completed-result pagination follows filters and language
-changes while retaining the expanded limit. Paused analyses can load more results;
-the table distinguishes loaded matching combinations from the calculation total
-and explains its snapshot during calculation. Reset filters restores the original
-exclusions and clears requirements while retaining the pagination limit. The guide
+buttons. Analysis exposes bounded partial results and gives localized feedback
+when no results match the filters. Changing language preserves Discovery
+calculations, filters, expanded groups, and pagination. The table pages consecutive
+recipe groups across the full sorted, filtered snapshot, with separate pagination
+for combinations within expanded groups. Both main paging bars provide independent
+page-size controls from 10 to 100 and a Refresh results button while calculation
+is running or paused. Refresh preserves the browsing position without pausing;
+completion refreshes automatically. Expanded groups have visible boundaries.
+The table distinguishes matching combinations in the displayed snapshot from the
+calculation total. Reset filters restores the original exclusions and clears
+requirements while retaining both page sizes. The guide
 also omits undefined percentage gains for zero ingredient baselines and drains
 delivered batch results to avoid retaining a second result collection.
+Analyzer outcomes, gain sorting, and Simulator ingredient summaries apply the
+selected character's consumption rules. The guide's regression checks compare
+Warly, Webber, and Wigfrid outcomes with the Simulator and preserve the original
+values for other characters.
 Ingredient, tab, and game changes
 save immediately, so recovery does not depend on a normal page unload. Run it with
 `npm --prefix app/foodguide run test:browser` after installing Chromium in that
@@ -43,10 +51,10 @@ order. The native smoke test expands a recipe with the keyboard, activates a
 combination to fill the Simulator, and checks exact ingredient keys and immediate
 saved state. Returning retains the Discovery calculation and expanded group.
 It also checks filter resets through native keyboard input and localized matching
-counts without losing the loaded limit.
+counts without losing the selected page sizes.
 Analyzer work yields between combinations with a 16 ms target and reports checked
 input combinations separately from valid outcomes. The native smoke test checks
-completed progress, pauses a larger Statistics run, loads more results, verifies
+completed progress, pauses a larger Statistics run, refreshes results, verifies
 that resetting filters leaves progress unchanged, and clears the run.
 Cooking views retain selected food, explain fully and partially hidden search
 matches, and offer Show all recovery that preserves the query and restores search
@@ -168,4 +176,4 @@ The macOS DMG toolchain still requests the old `image-size` API:
 
 The override's `../../tools/image-size-compat` path is relative to `node_modules/appdmg`. Keep the adapter installed as a direct development dependency so its compatibility tests also run on Windows and Linux, where `appdmg` is optional and skipped. Tests cover buffers, synchronous file reads, background callbacks, missing-file errors, and malformed ICNS input in a child process with a timeout. The macOS CI job also verifies that the installed `appdmg` resolves this adapter and builds an actual DMG.
 
-Both full and production dependency audits are clean as of October 9, 2026. The parser and adapter are development dependencies excluded from the app archive. Recheck the fork and override when the DMG toolchain updates; remove the adapter once upstream provides a compatible patched parser.
+Both full and production dependency audits are clean as of October 10, 2026. The parser and adapter are development dependencies excluded from the app archive. Recheck the fork and override when the DMG toolchain updates; remove the adapter once upstream provides a compatible patched parser.
