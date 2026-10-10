@@ -22,6 +22,9 @@ ingredient removal with Space, empty-slot activation, Escape/reopening the picke
 and table sorting with keyboard focus retained. It checks the grouping menu with
 native keyboard input, named result groups, option positions, and selected-only
 removal controls while exercising ingredient shortcuts inside grouped results.
+Wide pickers arrange groups as cards in one scroll area; narrow pickers stack
+them. The native smoke test checks the card layout and native zoom, and the guide's browser suite
+verifies each display/density combination and focus across resizing.
 Cooking views retain selected food, explain fully and partially hidden search
 matches, and offer Show all recovery that preserves the query and restores search
 focus. The native smoke test verifies recovery and its saved view preference.

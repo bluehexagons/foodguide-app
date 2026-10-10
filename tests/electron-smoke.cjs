@@ -394,6 +394,49 @@ async function main() {
     true,
     'Grouped results must expose their label and global option positions',
   );
+  await clickElement(win, '#simulator .clearsearchbtn');
+  await waitFor(
+    win,
+    "document.querySelectorAll('#simulator .ingredientdropdown [role=group]').length > 1",
+  );
+  assert.equal(
+    await win.webContents.executeJavaScript(`(() => {
+      const picker = document.querySelector('#simulator .ingredientdropdown');
+      const groups = [...picker.querySelectorAll('[role=group]')];
+      const first = groups[0].getBoundingClientRect();
+      const second = groups[1].getBoundingClientRect();
+      return Math.abs(first.top - second.top) < 1 && second.left >= first.right &&
+        picker.scrollWidth === picker.clientWidth &&
+        groups.every(group => getComputedStyle(group).overflowY === 'visible');
+    })()`),
+    true,
+    'Wide grouped pickers must show cards side by side in one scroll area',
+  );
+  for (let i = 0; i < 4; i++) {
+    const scaleBefore = await win.webContents.executeJavaScript('devicePixelRatio');
+    menu.getMenuItemById('zoom-in').click(undefined, win, win.webContents);
+    await waitFor(win, `devicePixelRatio > ${scaleBefore}`);
+  }
+  await waitFor(
+    win,
+    "getComputedStyle(document.querySelector('#simulator .ingredient-result-groups')).display === 'block'",
+  );
+  assert.equal(
+    await win.webContents.executeJavaScript(`(() => {
+      const groups = document.querySelectorAll('#simulator .ingredientdropdown [role=group]');
+      return groups[1].getBoundingClientRect().top >= groups[0].getBoundingClientRect().bottom &&
+        document.activeElement === document.querySelector('#simulator .ingredientpicker');
+    })()`),
+    true,
+    'Native zoom must stack group cards while retaining input focus',
+  );
+  menu.getMenuItemById('reset-zoom').click(undefined, win, win.webContents);
+  await waitFor(win, `Math.abs(devicePixelRatio - ${originalScale}) < 0.01`);
+  await win.webContents.executeJavaScript(`(() => {
+    const input = document.querySelector('#simulator .ingredientpicker');
+    input.value = 'Berries';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  })()`);
   await clickElement(win, '#ingredients .ingredient:nth-child(4) .icon');
   await waitFor(win, "document.querySelectorAll('#ingredients .icon').length === 3");
   await clickElement(win, '#simulator [role="option"][aria-label="Berries 2"] .text');
