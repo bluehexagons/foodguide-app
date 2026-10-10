@@ -15,8 +15,11 @@ Native File/Edit/View/Window menus preserve platform keyboard and accessibility
 conventions. The View menu provides zoom in/out/reset with the standard
 Command/Ctrl shortcuts. Pinch zoom is enabled from 1× to 5× after each page load;
 Electron [disables visual zoom by default](https://www.electronjs.org/docs/latest/api/web-contents#contentssetvisualzoomlevellimitsminimumlevel-maximumlevel).
-The native smoke test verifies menu zoom actions and keyboard zoom/reset. Check
-pinch behavior and touch target sizing on a physical touchscreen as well.
+The native smoke test verifies menu zoom actions on every platform and injected
+keyboard zoom/reset on Windows/Linux. On macOS it verifies the installed menu
+commands and their accelerators; this harness's synthetic renderer keys do not
+activate the Cocoa application menu. Check native shortcuts, pinch behavior, and touch target sizing
+on physical devices as well.
 
 ## Repository layout
 

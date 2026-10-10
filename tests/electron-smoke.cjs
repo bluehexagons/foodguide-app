@@ -61,15 +61,23 @@ async function main() {
   }
   await waitFor(win, 'document.hasFocus()');
   const originalScale = await win.webContents.executeJavaScript('devicePixelRatio');
-  const modifier = process.platform === 'darwin' ? 'meta' : 'control';
-  for (const type of ['keyDown', 'keyUp']) {
-    win.webContents.sendInputEvent({ type, keyCode: '-', modifiers: [modifier] });
-  }
+  const zoomCommand = (id, keyCode) => {
+    const item = menu.getMenuItemById(id);
+    assert(item);
+    if (process.platform === 'darwin') {
+      // Cocoa dispatches app-menu shortcuts; renderer input injection bypasses that path.
+      assert.equal(item.accelerator, `CommandOrControl+${keyCode}`);
+      item.click(undefined, win, win.webContents);
+    } else {
+      for (const type of ['keyDown', 'keyUp']) {
+        win.webContents.sendInputEvent({ type, keyCode, modifiers: ['control'] });
+      }
+    }
+  };
+  zoomCommand('zoom-out', '-');
   await waitFor(win, `devicePixelRatio < ${originalScale}`);
   assert(win.webContents.getZoomFactor() < 1);
-  for (const type of ['keyDown', 'keyUp']) {
-    win.webContents.sendInputEvent({ type, keyCode: '0', modifiers: [modifier] });
-  }
+  zoomCommand('reset-zoom', '0');
   await waitFor(win, `Math.abs(devicePixelRatio - ${originalScale}) < 0.01`);
   assert.equal(win.webContents.getZoomFactor(), 1);
   menu.getMenuItemById('zoom-in').click(undefined, win, win.webContents);
