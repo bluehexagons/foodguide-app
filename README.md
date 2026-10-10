@@ -2,6 +2,11 @@
 
 An unofficial [Don't Starve Food Guide](https://github.com/bluehexagons/foodguide) in an Electron desktop app. The bundled guide works offline; external HTTPS links open in your default browser.
 
+Ingredient pickers offer **Cooking: Practical** to hide redundant forms and uncommon
+inputs while keeping recipe specialties, or **Cooking: Everyday** for a smaller
+routine cooking list. **Cooking: All** restores every available ingredient. Each
+picker remembers its choice; switching views leaves selected ingredients in place.
+
 Download Windows and Linux builds from [Releases](https://github.com/bluehexagons/foodguide-app/releases). Windows has a Squirrel installer and a portable ZIP. Linux has an AppImage and a Debian package. Builds target a specific processor architecture; AppImages still require a compatible Linux system.
 
 ## Run from source

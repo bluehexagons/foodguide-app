@@ -291,6 +291,66 @@ async function main() {
     }
   };
   win.webContents.on('console-message', recordWarning);
+  await clickElement(win, '#simulator .cookingingredients');
+  await waitFor(win, "document.activeElement?.dataset.value === 'all'");
+  win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Down' });
+  win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Down' });
+  await waitFor(win, "document.activeElement?.dataset.value === 'practical'");
+  win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Return' });
+  win.webContents.sendInputEvent({ type: 'char', keyCode: '\r' });
+  win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Return' });
+  await waitFor(
+    win,
+    "document.querySelector('#simulator .cookingingredients').textContent === 'Cooking: Practical'",
+  );
+  for (const query of ['*Cooked Meat', 'goatmilk']) {
+    await win.webContents.executeJavaScript(`(() => {
+      const input = document.querySelector('#simulator .ingredientpicker');
+      input.value = ${JSON.stringify(query)};
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    })()`);
+    assert.equal(
+      await win.webContents.executeJavaScript(`(() => {
+        return document.querySelectorAll('#simulator [role=option]').length === 0 &&
+          document.querySelector('#simulator .ingredient-search-summary').textContent.includes('Cooking: All') &&
+          document.querySelectorAll('#ingredients .icon').length === 4;
+      })()`),
+      true,
+      'Cooking filters must explain hidden matches without changing the selected pot',
+    );
+  }
+  await clickElement(win, '#simulator .cookingingredients');
+  await waitFor(
+    win,
+    "document.querySelector('#simulator .cookingingredients').getAttribute('aria-expanded') === 'true'",
+  );
+  await clickElement(win, '#simulator [role=menuitemradio][data-value=all]');
+  await waitFor(win, "document.querySelectorAll('#simulator [role=option]').length === 1");
+  await clickElement(win, '#simulator .cookingingredients');
+  await waitFor(
+    win,
+    "document.querySelector('#simulator .cookingingredients').getAttribute('aria-expanded') === 'true'",
+  );
+  await clickElement(win, '#simulator [role=menuitemradio][data-value=everyday]');
+  await waitFor(win, "document.querySelectorAll('#simulator [role=option]').length === 0");
+  assert.equal(
+    await win.webContents.executeJavaScript(
+      "JSON.parse(localStorage.getItem('foodGuideCookingPreference'))[0]",
+    ),
+    'everyday',
+  );
+  await clickElement(win, '#simulator .cookingingredients');
+  await waitFor(
+    win,
+    "document.querySelector('#simulator .cookingingredients').getAttribute('aria-expanded') === 'true'",
+  );
+  await clickElement(win, '#simulator [role=menuitemradio][data-value=all]');
+  await waitFor(win, "document.querySelectorAll('#simulator [role=option]').length === 1");
+  await win.webContents.executeJavaScript(`(() => {
+    const input = document.querySelector('#simulator .ingredientpicker');
+    input.value = 'Berries';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  })()`);
   await clickElement(win, '#simulator .groupingredients');
   await waitFor(win, "document.activeElement?.dataset.value === 'none'");
   win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Down' });
@@ -683,7 +743,7 @@ async function main() {
     (await win.webContents.capturePage()).toPNG(),
   );
   console.log(
-    `Electron smoke passed: ${manifest} sprites, native zoom menus and shortcuts, search and full-pot feedback, mushroom search, keyboard recipes, grouped ingredient removal and selected-only controls, picker dismissal, tab navigation, mouse ingredient entry, keyboard table sorting, column selection and focus recovery at 200% zoom, horizontal scrolling, immediate saved selections, Discovery filtering and localized pagination, saved theme/language and ingredients after reload, sandbox, blocked popup.`,
+    `Electron smoke passed: ${manifest} sprites, native zoom menus and shortcuts, cooking views and preserved pot selections, search and full-pot feedback, mushroom search, keyboard recipes, grouped ingredient removal and selected-only controls, picker dismissal, tab navigation, mouse ingredient entry, keyboard table sorting, column selection and focus recovery at 200% zoom, horizontal scrolling, immediate saved selections, Discovery filtering and localized pagination, saved theme/language and ingredients after reload, sandbox, blocked popup.`,
   );
 }
 
