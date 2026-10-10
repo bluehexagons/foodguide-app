@@ -14,7 +14,13 @@ columns. Resizing or zooming moves focus out of hidden cells to their column
 buttons. Analysis exposes bounded partial results when paused and gives localized
 feedback when no results match the filters. Changing language preserves Discovery
 calculations and filters. Completed-result pagination follows filters and language
-changes while retaining the expanded limit. Ingredient, tab, and game changes
+changes while retaining the expanded limit. Paused analyses can load more results;
+the table distinguishes loaded matching combinations from the calculation total
+and explains its snapshot during calculation. Reset filters restores the original
+exclusions and clears requirements while retaining the pagination limit. The guide
+also omits undefined percentage gains for zero ingredient baselines and drains
+delivered batch results to avoid retaining a second result collection.
+Ingredient, tab, and game changes
 save immediately, so recovery does not depend on a normal page unload. Run it with
 `npm --prefix app/foodguide run test:browser` after installing Chromium in that
 checkout. The native Electron smoke test separately exercises arrow-key tabs,
@@ -36,6 +42,8 @@ Efficiency results group consecutive combinations without changing their sort
 order. The native smoke test expands a recipe with the keyboard, activates a
 combination to fill the Simulator, and checks exact ingredient keys and immediate
 saved state. Returning retains the Discovery calculation and expanded group.
+It also checks filter resets through native keyboard input and localized matching
+counts without losing the loaded limit.
 Cooking views retain selected food, explain fully and partially hidden search
 matches, and offer Show all recovery that preserves the query and restores search
 focus. The native smoke test verifies recovery and its saved view preference.

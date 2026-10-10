@@ -901,6 +901,29 @@ async function main() {
     win,
     "document.querySelectorAll('#makable tbody tr').length === 1000 && !document.querySelector('#makable .showMoreButton').hidden",
   );
+  await clickElement(win, recipe);
+  await waitFor(win, "document.querySelector('#makable .showMoreButton').hidden");
+  await win.webContents.executeJavaScript(
+    "document.querySelector('#makable .resetAnalysisFiltersButton').focus()",
+  );
+  win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Space' });
+  win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Space' });
+  await waitFor(
+    win,
+    "document.querySelectorAll('#makable tbody tr').length === 1000 && !document.querySelector('#makable .showMoreButton').hidden",
+  );
+  assert.equal(
+    await win.webContents.executeJavaScript(
+      "document.activeElement === document.querySelector('#makable .resetAnalysisFiltersButton')",
+    ),
+    true,
+  );
+  assert.equal(
+    await win.webContents.executeJavaScript(
+      "document.querySelector('#makable .analysis-result-count').textContent",
+    ),
+    `Loaded 1000 of ${resultTotal} matching combinations.`,
+  );
   await win.webContents.executeJavaScript(`(() => {
     document.querySelector('#theme-toggle').click();
     const select = document.querySelector('#language-picker');
@@ -916,6 +939,18 @@ async function main() {
       "document.querySelector('#makable .showMoreButton').textContent",
     ),
     `Mostrar más resultados (1000 de ${resultTotal})`,
+  );
+  assert.equal(
+    await win.webContents.executeJavaScript(
+      "document.querySelector('#makable .analysis-result-count').textContent",
+    ),
+    `Se cargaron 1000 de ${resultTotal} combinaciones coincidentes.`,
+  );
+  assert.equal(
+    await win.webContents.executeJavaScript(
+      "document.querySelector('#makable .resetAnalysisFiltersButton').textContent",
+    ),
+    'Restablecer filtros',
   );
   await clickElement(win, '#makable .deleteButton');
   await waitFor(win, "!document.querySelector('#makable .makableContainer')");

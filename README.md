@@ -7,6 +7,11 @@ inputs while keeping recipe specialties, or **Cooking: Everyday** for a smaller
 routine cooking list. **Cooking: All** restores every available ingredient. Each
 picker remembers its choice; switching views leaves selected ingredients in place.
 
+Efficiency tables group consecutive combinations for the same recipe, preserving
+their sort order. Expand a recipe to inspect combinations or click its ingredients
+to load the Simulator. Pause calculations to inspect more results, and use
+**Reset filters** to restore the analysis's original filters.
+
 Download Windows and Linux builds from [Releases](https://github.com/bluehexagons/foodguide-app/releases). Windows has a Squirrel installer and a portable ZIP. Linux has an AppImage and a Debian package. Builds target a specific processor architecture; AppImages still require a compatible Linux system.
 
 ## Run from source
