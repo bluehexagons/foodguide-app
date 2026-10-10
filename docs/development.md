@@ -9,13 +9,17 @@ control sizing across narrow phone and larger tablet/desktop viewports, includin
 increased text spacing and complete touch-visible ingredient names. It verifies
 localized search feedback, persistent ingredient error explanations, non-color
 selection indicators, forced-color display, and keyboard scrolling of named
-tables. Run it with
+tables. Manual column selections override Auto while retaining the other visible
+columns. Resizing or zooming moves focus out of hidden cells to their column
+buttons. Analysis exposes bounded partial results when paused and gives localized
+feedback when no results match the filters. Changing language preserves Discovery
+calculations and filters. Run it with
 `npm --prefix app/foodguide run test:browser` after installing Chromium in that
 checkout. The native Electron smoke test separately exercises arrow-key tabs,
 ingredient removal with Space, empty-slot activation, Escape/reopening the picker,
 and table sorting with keyboard focus retained. It also checks empty-search status
-feedback, visible full-pot error recovery, and native horizontal table scrolling
-at 200% zoom.
+feedback, visible full-pot error recovery, manual column selection, focus recovery,
+and native horizontal table scrolling at 200% zoom.
 
 Native File/Edit/View/Window menus preserve platform keyboard and accessibility
 conventions. The View menu provides zoom in/out/reset with the standard

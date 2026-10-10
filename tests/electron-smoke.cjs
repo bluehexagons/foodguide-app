@@ -18,7 +18,16 @@ async function waitFor(win, expression) {
     }
     await delay(50);
   }
-  assert.fail(`Timed out waiting for ${expression}`);
+  const focus = await win.webContents.executeJavaScript(`({
+    hasFocus: document.hasFocus(),
+    activeElement: document.activeElement?.outerHTML.slice(0, 400),
+    width: innerWidth,
+    sortedHeaders: [...document.querySelectorAll('th[aria-sort]')].map(header => ({
+      key: header.dataset.sort,
+      direction: header.getAttribute('aria-sort'),
+    })),
+  })`);
+  assert.fail(`Timed out waiting for ${expression}\n${JSON.stringify(focus)}`);
 }
 
 async function clickElement(win, selector) {
@@ -28,11 +37,24 @@ async function clickElement(win, selector) {
     element.scrollIntoView({ block: 'center', behavior: 'instant' });
     const rect = element.getBoundingClientRect();
     if (!rect.width || !rect.height) throw new Error('Mouse target is not visible');
-    return { x: Math.round(rect.x + rect.width / 2), y: Math.round(rect.y + rect.height / 2) };
+    return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
   })()`);
-  win.webContents.sendInputEvent({ type: 'mouseMove', ...position });
-  win.webContents.sendInputEvent({ type: 'mouseDown', button: 'left', clickCount: 1, ...position });
-  win.webContents.sendInputEvent({ type: 'mouseUp', button: 'left', clickCount: 1, ...position });
+  // DOM rectangles use CSS pixels; Electron input uses window coordinates before page zoom.
+  const zoom = win.webContents.getZoomFactor();
+  const inputPosition = { x: Math.round(position.x * zoom), y: Math.round(position.y * zoom) };
+  win.webContents.sendInputEvent({ type: 'mouseMove', ...inputPosition });
+  win.webContents.sendInputEvent({
+    type: 'mouseDown',
+    button: 'left',
+    clickCount: 1,
+    ...inputPosition,
+  });
+  win.webContents.sendInputEvent({
+    type: 'mouseUp',
+    button: 'left',
+    clickCount: 1,
+    ...inputPosition,
+  });
 }
 
 async function main() {
@@ -230,7 +252,53 @@ async function main() {
     ),
     'Crock pot results',
   );
+  const cookTimeHeader = '#results table th[data-sort="cooktime"]';
+  const columnBar = '#results .column-toggle-bar';
+  assert.equal(
+    await win.webContents.executeJavaScript(
+      `document.querySelector(${JSON.stringify(columnBar)}).getAttribute('aria-label')`,
+    ),
+    'Columns: Crock pot results',
+  );
+  await win.webContents.executeJavaScript(
+    `document.querySelector(${JSON.stringify(`${cookTimeHeader} button`)}).focus()`,
+  );
+  await waitFor(
+    win,
+    `document.activeElement === document.querySelector(${JSON.stringify(`${cookTimeHeader} button`)})`,
+  );
   win.webContents.setZoomFactor(2);
+  await waitFor(
+    win,
+    `document.querySelector(${JSON.stringify(cookTimeHeader)}).classList.contains('col-hidden')`,
+  );
+  const autoToggle = `${columnBar} button[title]`;
+  await waitFor(
+    win,
+    "document.activeElement.closest('#results .column-toggle-bar') && document.activeElement.textContent === 'Cook Time'",
+  );
+  win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Return' });
+  win.webContents.sendInputEvent({ type: 'char', keyCode: '\r' });
+  win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Return' });
+  await waitFor(
+    win,
+    `!document.querySelector(${JSON.stringify(cookTimeHeader)}).classList.contains('col-hidden')`,
+  );
+  assert.equal(
+    await win.webContents.executeJavaScript(
+      `document.querySelector(${JSON.stringify(autoToggle)}).getAttribute('aria-pressed')`,
+    ),
+    'false',
+  );
+  await clickElement(win, autoToggle);
+  await waitFor(
+    win,
+    `document.querySelector(${JSON.stringify(autoToggle)}).getAttribute('aria-pressed') === 'true'`,
+  );
+  await waitFor(
+    win,
+    `document.querySelector(${JSON.stringify(cookTimeHeader)}).classList.contains('col-hidden')`,
+  );
   await waitFor(win, "document.querySelector('#results .table-scroll-wrapper').tabIndex === 0");
   await win.webContents.executeJavaScript(`(() => {
     const wrapper = document.querySelector('#results .table-scroll-wrapper');
@@ -241,9 +309,14 @@ async function main() {
   win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Right' });
   await waitFor(win, "document.querySelector('#results .table-scroll-wrapper').scrollLeft > 0");
   win.webContents.setZoomFactor(1);
+  await waitFor(win, `Math.abs(devicePixelRatio - ${originalScale}) < 0.01`);
 
   await win.webContents.executeJavaScript(
     `document.querySelector(${JSON.stringify(`${healthHeader} button`)}).focus()`,
+  );
+  await waitFor(
+    win,
+    `document.hasFocus() && document.activeElement === document.querySelector(${JSON.stringify(`${healthHeader} button`)})`,
   );
 
   win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Space' });
@@ -347,7 +420,7 @@ async function main() {
     (await win.webContents.capturePage()).toPNG(),
   );
   console.log(
-    `Electron smoke passed: ${manifest} sprites, native zoom menus and shortcuts, search and full-pot feedback, mushroom search, keyboard recipes, ingredient removal, picker dismissal, tab navigation, mouse ingredient entry, keyboard table sorting and scrolling at 200% zoom, saved theme/language, sandbox, blocked popup.`,
+    `Electron smoke passed: ${manifest} sprites, native zoom menus and shortcuts, search and full-pot feedback, mushroom search, keyboard recipes, ingredient removal, picker dismissal, tab navigation, mouse ingredient entry, keyboard table sorting, column selection and focus recovery at 200% zoom, horizontal scrolling, saved theme/language, sandbox, blocked popup.`,
   );
 }
 
