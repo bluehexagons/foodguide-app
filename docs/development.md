@@ -19,7 +19,8 @@ checkout. The native Electron smoke test separately exercises arrow-key tabs,
 ingredient removal with Space, empty-slot activation, Escape/reopening the picker,
 and table sorting with keyboard focus retained. It also checks empty-search status
 feedback, visible full-pot error recovery, manual column selection, focus recovery,
-and native horizontal table scrolling at 200% zoom.
+and horizontal table scrolling at 200% zoom. Focused table regions handle
+unmodified Left/Right directly; table buttons retain their own keyboard behavior.
 
 Native File/Edit/View/Window menus preserve platform keyboard and accessibility
 conventions. The View menu provides zoom in/out/reset with the standard
