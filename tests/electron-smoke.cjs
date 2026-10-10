@@ -254,7 +254,7 @@ async function main() {
     await win.webContents.executeJavaScript(
       "document.querySelector('#simulator .ingredient-search-summary').hidden",
     ),
-    true,
+    false,
   );
   await win.webContents.executeJavaScript(`(() => {
     const input = document.querySelector('#simulator .ingredientpicker');
@@ -285,6 +285,58 @@ async function main() {
   await clickElement(win, '#ingredients .ingredient:nth-child(4) .icon');
   await waitFor(win, "document.querySelectorAll('#ingredients .icon').length === 3");
   await clickElement(win, '#simulator [role="option"][aria-label="Berries 2"] .text');
+  await waitFor(win, "document.querySelectorAll('#ingredients .icon').length === 4");
+  // Native input and pointer shortcuts share the same removal paths.
+  await win.webContents.executeJavaScript(
+    "document.querySelector('#simulator .ingredientpicker').focus()",
+  );
+  win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Down' });
+  win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Down' });
+  win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Return', modifiers: ['shift'] });
+  win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Return', modifiers: ['shift'] });
+  await waitFor(win, "document.querySelectorAll('#ingredients .icon').length === 3");
+  await clickElement(win, '#simulator [role=option][aria-label="Berries 2"] .ingredient-toggle');
+  await waitFor(win, "document.querySelectorAll('#ingredients .icon').length === 1");
+  for (let i = 0; i < 3; i++) {
+    await clickElement(win, '#simulator [role=option][data-id="berries@together"] .text');
+    await waitFor(win, `document.querySelectorAll('#ingredients .icon').length === ${i + 2}`);
+  }
+  await clickElement(win, '#simulator [role=option][aria-label="Berries 3"] .ingredient-subtract');
+  await waitFor(win, "document.querySelectorAll('#ingredients .icon').length === 3");
+  await win.webContents.executeJavaScript(
+    "document.querySelector('#simulator .ingredientpicker').focus()",
+  );
+  win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
+  win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' });
+  win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Down' });
+  win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Down' });
+  await waitFor(
+    win,
+    "document.querySelector('#simulator [role=option][aria-selected=true] .text')?.textContent === 'Berries'",
+  );
+  const removeAllModifiers = process.platform === 'darwin' ? ['meta'] : ['control'];
+  win.webContents.sendInputEvent({
+    type: 'keyDown',
+    keyCode: 'Return',
+    modifiers: removeAllModifiers,
+  });
+  win.webContents.sendInputEvent({
+    type: 'keyUp',
+    keyCode: 'Return',
+    modifiers: removeAllModifiers,
+  });
+  await waitFor(win, "document.querySelectorAll('#ingredients .icon').length === 1");
+  assert.equal(
+    await win.webContents.executeJavaScript(
+      "document.activeElement === document.querySelector('#simulator .ingredientpicker')",
+    ),
+    true,
+  );
+  for (let i = 0; i < 3; i++) {
+    win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Return' });
+    win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Return' });
+    await delay(50);
+  }
   await waitFor(win, "document.querySelectorAll('#ingredients .icon').length === 4");
   win.webContents.removeListener('console-message', recordWarning);
   assert.deepEqual(warnings, []);

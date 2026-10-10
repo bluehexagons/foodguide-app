@@ -71,8 +71,10 @@ xvfb-run -a npm run test:electron
 
 The native regression checks picked ingredient quantities across search rebuilds
 and verifies that full-pot feedback appears above the selection without moving
-it. Reopening the picker must keep its result count hidden while an error is
-visible. The guide's browser suite covers translated errors and narrow layouts.
+it. Result counts stay visible in a separate row while an error is shown.
+Native pointer targets and Shift+Enter/Ctrl or Command+Enter shortcuts remove one
+or all copies without losing input focus. The guide's browser suite covers
+translated errors and narrow layouts.
 
 The smoke-test launcher uses `src/scripts/run-process.mts` to preserve the child's
 exit code and report startup failures. Its 60-second deadline forcibly stops a
