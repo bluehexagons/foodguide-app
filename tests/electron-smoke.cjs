@@ -50,6 +50,16 @@ async function main() {
 
   const menu = Menu.getApplicationMenu();
   assert(menu);
+  // Page load can precede showing/OS focus; native menu shortcuts need a focused window.
+  if (!win.isVisible()) {
+    await once(win, 'ready-to-show');
+  }
+  win.focus();
+  win.webContents.focus();
+  if (process.platform === 'darwin') {
+    app.focus({ steal: true });
+  }
+  await waitFor(win, 'document.hasFocus()');
   const originalScale = await win.webContents.executeJavaScript('devicePixelRatio');
   const modifier = process.platform === 'darwin' ? 'meta' : 'control';
   for (const type of ['keyDown', 'keyUp']) {
