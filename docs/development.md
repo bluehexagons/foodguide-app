@@ -28,6 +28,9 @@ Analyzer outcomes, gain sorting, and Simulator ingredient summaries apply the
 selected character's consumption rules. The guide's regression checks compare
 Warly, Webber, and Wigfrid outcomes with the Simulator and preserve the original
 values for other characters.
+Food, recipe, Simulator, and Discovery stat columns also sort using the displayed
+character values. Guide tests cover both directions while preserving summary
+rows and missing-value ordering.
 Ingredient, tab, and game changes
 save immediately, so recovery does not depend on a normal page unload. Run it with
 `npm --prefix app/foodguide run test:browser` after installing Chromium in that
