@@ -110,6 +110,29 @@ async function main() {
     assert(mushrooms.includes(name), `Mushroom search is missing ${name}`);
   }
 
+  await win.webContents.executeJavaScript(`(() => {
+    const input = document.querySelector('#simulator .ingredientpicker');
+    input.focus();
+    input.value = 'zzzznomatches';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  })()`);
+  await waitFor(
+    win,
+    "document.querySelector('#simulator [role=status]').textContent === 'No matching ingredients. Try another search or game selection.'",
+  );
+  assert.equal(
+    await win.webContents.executeJavaScript(
+      "document.querySelectorAll('#simulator [role=option]').length",
+    ),
+    0,
+  );
+  assert.equal(
+    await win.webContents.executeJavaScript(
+      "document.querySelector('#simulator .ingredient-search-summary').hidden",
+    ),
+    false,
+  );
+
   for (const ingredient of ['Meat', 'Berries', 'Berries', 'Berries']) {
     await win.webContents.executeJavaScript(`(() => {
       const input = document.querySelector('#simulator .ingredientpicker');
@@ -162,6 +185,28 @@ async function main() {
       `document.activeElement === document.querySelector(${JSON.stringify(`${healthHeader} button`)})`,
     ),
     true,
+  );
+
+  assert.equal(
+    await win.webContents.executeJavaScript(
+      "document.querySelector('#results table caption').textContent",
+    ),
+    'Crock pot results',
+  );
+  win.webContents.setZoomFactor(2);
+  await waitFor(win, "document.querySelector('#results .table-scroll-wrapper').tabIndex === 0");
+  await win.webContents.executeJavaScript(`(() => {
+    const wrapper = document.querySelector('#results .table-scroll-wrapper');
+    wrapper.scrollLeft = 0;
+    wrapper.focus();
+  })()`);
+  win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Right' });
+  win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Right' });
+  await waitFor(win, "document.querySelector('#results .table-scroll-wrapper').scrollLeft > 0");
+  win.webContents.setZoomFactor(1);
+
+  await win.webContents.executeJavaScript(
+    `document.querySelector(${JSON.stringify(`${healthHeader} button`)}).focus()`,
   );
 
   win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Space' });
@@ -265,7 +310,7 @@ async function main() {
     (await win.webContents.capturePage()).toPNG(),
   );
   console.log(
-    `Electron smoke passed: ${manifest} sprites, native zoom menus and shortcuts, mushroom search, keyboard recipes, ingredient removal, picker dismissal, tab navigation, mouse ingredient entry, keyboard table sorting and focus, saved theme/language, sandbox, blocked popup.`,
+    `Electron smoke passed: ${manifest} sprites, native zoom menus and shortcuts, search feedback, mushroom search, keyboard recipes, ingredient removal, picker dismissal, tab navigation, mouse ingredient entry, keyboard table sorting and scrolling at 200% zoom, saved theme/language, sandbox, blocked popup.`,
   );
 }
 
