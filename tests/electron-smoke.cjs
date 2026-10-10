@@ -44,6 +44,15 @@ async function waitFor(win, expression) {
 }
 
 async function clickElement(win, selector) {
+  // Native input is asynchronous; wait for menus and panels before measuring the next target.
+  await waitFor(
+    win,
+    `(() => {
+		const element = document.querySelector(${JSON.stringify(selector)});
+		const rect = element?.getBoundingClientRect();
+		return !!rect?.width && !!rect.height && getComputedStyle(element).visibility === 'visible';
+	})()`,
+  );
   const position = await win.webContents
     .executeJavaScript(`(() => {
     const element = document.querySelector(${JSON.stringify(selector)});
@@ -409,7 +418,7 @@ async function main() {
           if (index === 0) return true;
           const previous = rects[index - 1];
           return Math.abs(rect.left - previous.left) < 1
-            ? Math.abs(rect.top - previous.bottom - 12) < 1
+            ? Math.abs(rect.top - previous.bottom - parseFloat(getComputedStyle(groups[index - 1]).marginBottom)) < 1
             : rect.left >= previous.right && Math.abs(rect.top - rects[0].top) < 1;
         }) &&
         picker.scrollWidth === picker.clientWidth &&
@@ -492,6 +501,7 @@ async function main() {
     win,
     "document.querySelector('#simulator .ingredientdropdown').classList.contains('hidetext')",
   );
+  const iconWidths = {};
   for (const density of ['compact', 'normal', 'cozy']) {
     await clickElement(win, '#simulator .densityingredients');
     await clickElement(win, `#simulator [role=menuitemradio][data-value="${density}"]`);
@@ -515,7 +525,14 @@ async function main() {
       true,
       `${density} icons must use centered square tiles with aligned shortcuts`,
     );
+    iconWidths[density] = await win.webContents.executeJavaScript(
+      'document.querySelector(\'#simulator [role=option][data-id="berries@together"]\').getBoundingClientRect().width',
+    );
   }
+  assert.ok(
+    iconWidths.compact <= iconWidths.normal * 0.75 && iconWidths.normal < iconWidths.cozy,
+    'Compact icons must be distinctly smaller than normal and cozy icons',
+  );
   await clickElement(win, '#simulator .displaymodeingredients:not(.densityingredients)');
   await clickElement(win, '#simulator [role=menuitemradio][data-value=names]');
   await waitFor(
@@ -810,6 +827,63 @@ async function main() {
     return rows.length > 0 && rows.length < 500 && rows.every(row => row.cells[1].textContent === 'Meatballs');
   })()`),
   );
+  const groupToggle = '#makable .table-group-toggle';
+  await clickElement(win, groupToggle);
+  await waitFor(
+    win,
+    `document.querySelector(${JSON.stringify(groupToggle)}).getAttribute('aria-expanded') === 'true'`,
+  );
+  win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Space' });
+  win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Space' });
+  await waitFor(
+    win,
+    `document.querySelector(${JSON.stringify(groupToggle)}).getAttribute('aria-expanded') === 'false'`,
+  );
+  win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Return' });
+  win.webContents.sendInputEvent({ type: 'char', keyCode: '\r' });
+  win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Return' });
+  await waitFor(
+    win,
+    `document.querySelector(${JSON.stringify(groupToggle)}).getAttribute('aria-expanded') === 'true'`,
+  );
+  const analysisCombination = await win.webContents.executeJavaScript(`(() => {
+    const rowId = document.querySelector(${JSON.stringify(groupToggle)}).getAttribute('aria-controls').split(' ')[0];
+    const button = document.getElementById(rowId).querySelector('.analysis-ingredients');
+    button.focus();
+    return [...button.querySelectorAll('.icon')].map(icon => icon.dataset.id);
+  })()`);
+  win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Return' });
+  win.webContents.sendInputEvent({ type: 'char', keyCode: '\r' });
+  win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Return' });
+  await waitFor(
+    win,
+    "document.querySelector('#tab-simulator').getAttribute('aria-selected') === 'true'",
+  );
+  assert.deepEqual(
+    await win.webContents.executeJavaScript(
+      "[...document.querySelectorAll('#ingredients .ingredient')].map(slot => slot.dataset.id)",
+    ),
+    analysisCombination,
+  );
+  assert.deepEqual(
+    await win.webContents.executeJavaScript(
+      "JSON.parse(localStorage.getItem('foodGuideState')).pickers[0]",
+    ),
+    analysisCombination,
+  );
+  assert.equal(
+    await win.webContents.executeJavaScript(
+      "document.activeElement === document.querySelector('#ingredients .ingredient')",
+    ),
+    true,
+  );
+  await clickElement(win, '#tab-discovery');
+  assert.equal(
+    await win.webContents.executeJavaScript(
+      `document.querySelector(${JSON.stringify(groupToggle)}).getAttribute('aria-expanded')`,
+    ),
+    'true',
+  );
   // Cycle the recipe through excluded and back to normal, preserving the expanded limit.
   const recipe = '#makable .recipeFilter button:has([title="Meatballs"])';
   await win.webContents.executeJavaScript(
@@ -880,7 +954,7 @@ async function main() {
     (await win.webContents.capturePage()).toPNG(),
   );
   console.log(
-    `Electron smoke passed: ${manifest} sprites, native zoom menus and shortcuts, cooking views and preserved pot selections, search and full-pot feedback, mushroom search, keyboard recipes, grouped ingredient removal and selected-only controls, picker dismissal, tab navigation, mouse ingredient entry, keyboard table sorting, column selection and focus recovery at 200% zoom, horizontal scrolling, immediate saved selections, Discovery filtering and localized pagination, saved theme/language and ingredients after reload, sandbox, blocked popup.`,
+    `Electron smoke passed: ${manifest} sprites, native zoom menus and shortcuts, cooking views and preserved pot selections, search and full-pot feedback, mushroom search, keyboard recipes, grouped ingredient removal and selected-only controls, picker dismissal, tab navigation, mouse ingredient entry, keyboard table sorting, column selection and focus recovery at 200% zoom, horizontal scrolling, immediate saved selections, expandable analysis recipes and Simulator handoff, Discovery filtering and localized pagination, saved theme/language and ingredients after reload, sandbox, blocked popup.`,
   );
 }
 

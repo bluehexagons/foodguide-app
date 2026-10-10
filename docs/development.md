@@ -24,12 +24,18 @@ native keyboard input, named result groups, option positions, and selected-only
 removal controls while exercising ingredient shortcuts inside grouped results.
 The minus appears only for multiple pot copies and disappears when one remains;
 the checkbox stays anchored at the trailing edge in both states.
-Icon mode checks square tiles, centered sprites, and aligned shortcuts at each density.
+Icon mode checks square tiles, centered sprites, aligned shortcuts, and a clear
+size difference between compact, normal, and cozy. Compact uses fixed smaller
+tiles; touchscreens retain 44-pixel targets.
 Wide pickers stack group cards in columns in one scroll area, reading top to
 bottom and then left to right without gaps beneath shorter cards. Narrow pickers
 stack groups in one column. The native smoke test checks card spacing, reading
 order, and native zoom, and the guide's browser suite
 verifies each display/density combination and focus across resizing.
+Efficiency results group consecutive combinations without changing their sort
+order. The native smoke test expands a recipe with the keyboard, activates a
+combination to fill the Simulator, and checks exact ingredient keys and immediate
+saved state. Returning retains the Discovery calculation and expanded group.
 Cooking views retain selected food, explain fully and partially hidden search
 matches, and offer Show all recovery that preserves the query and restores search
 focus. The native smoke test verifies recovery and its saved view preference.
