@@ -186,6 +186,17 @@ async function main() {
     await delay(50);
   }
   await waitFor(win, "document.querySelectorAll('#ingredients .icon').length === 4");
+  assert.deepEqual(
+    await win.webContents.executeJavaScript(`(() => {
+      const berries = document.querySelector('#simulator [role=option][aria-label="Berries"]');
+      return {
+        picked: berries.classList.contains('faded'),
+        count: berries.querySelector('.ingredient-picked-marker').textContent,
+        description: berries.getAttribute('aria-description'),
+      };
+    })()`),
+    { picked: true, count: '3', description: 'In the pot: 3.' },
+  );
   await waitFor(
     win,
     "Array.from(document.querySelectorAll('#results a')).some(a => a.textContent === 'Meatballs')",
@@ -207,6 +218,9 @@ async function main() {
     win,
     "document.querySelector('#simulator [role=option][aria-selected=true]')?.getAttribute('aria-label') === 'Carrot'",
   );
+  const selectionTop = await win.webContents.executeJavaScript(
+    "document.querySelector('#ingredients').getBoundingClientRect().top + scrollY",
+  );
   win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Return' });
   win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Return' });
   await waitFor(
@@ -220,11 +234,39 @@ async function main() {
     })()`),
     true,
   );
+  assert.equal(
+    await win.webContents.executeJavaScript(`(() => {
+      const status = document.querySelector('#simulator [role=status]');
+      const rect = status.getBoundingClientRect();
+      return Math.abs(document.querySelector('#ingredients').getBoundingClientRect().top + scrollY - ${selectionTop}) < 1 &&
+        rect.top >= document.querySelector('#simulator .ingredientdropdown').getBoundingClientRect().bottom &&
+        rect.bottom <= document.querySelector('#simulator .selectionpanel').getBoundingClientRect().top;
+    })()`),
+    true,
+    'Picker errors must occupy reserved space above the selected ingredients',
+  );
+  win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
+  win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' });
+  win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Down' });
+  win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Down' });
+  assert.equal(
+    await win.webContents.executeJavaScript(
+      "document.querySelector('#simulator .ingredient-search-summary').hidden",
+    ),
+    true,
+  );
   await win.webContents.executeJavaScript(`(() => {
     const input = document.querySelector('#simulator .ingredientpicker');
     input.value = 'Berries';
     input.dispatchEvent(new Event('input', { bubbles: true }));
   })()`);
+  assert.equal(
+    await win.webContents.executeJavaScript(
+      'document.querySelector(\'#simulator [role=option][aria-label="Berries"] .ingredient-picked-marker\').textContent',
+    ),
+    '3',
+    'A search rebuild must retain the picked quantity',
+  );
   assert.equal(
     await win.webContents.executeJavaScript(
       "document.querySelector('#simulator [role=status]').classList.contains('ingredient-feedback')",

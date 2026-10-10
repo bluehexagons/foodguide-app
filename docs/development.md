@@ -69,6 +69,11 @@ Run `npm run test:electron` from a graphical session. Its temporary profile keep
 xvfb-run -a npm run test:electron
 ```
 
+The native regression checks picked ingredient quantities across search rebuilds
+and verifies that full-pot feedback appears above the selection without moving
+it. Reopening the picker must keep its result count hidden while an error is
+visible. The guide's browser suite covers translated errors and narrow layouts.
+
 The smoke-test launcher uses `src/scripts/run-process.mts` to preserve the child's
 exit code and report startup failures. Its 60-second deadline forcibly stops a
 hung process and fails the test; profile cleanup runs even after a timeout.
