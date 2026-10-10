@@ -60,6 +60,10 @@ async function clickElement(win, selector) {
     element.scrollIntoView({ block: 'center', behavior: 'instant' });
     const rect = element.getBoundingClientRect();
     if (!rect.width || !rect.height) throw new Error('Mouse target is not visible');
+    window.foodguideSmokeClickComplete = false;
+    element.addEventListener('click', () => {
+      queueMicrotask(() => { window.foodguideSmokeClickComplete = true; });
+    }, { once: true, capture: true });
     return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
   })()`)
     .catch(error => {
@@ -81,6 +85,19 @@ async function clickElement(win, selector) {
     clickCount: 1,
     ...inputPosition,
   });
+  await waitFor(win, 'window.foodguideSmokeClickComplete === true');
+}
+
+async function selectPageSize(win, action, value) {
+  const selector = `[data-table-action="${action}"]`;
+  const selectedValue = JSON.stringify(String(value));
+  await win.webContents.executeJavaScript(
+    `(() => { const select = document.querySelector('#makable .table-group-pagination ' + ${JSON.stringify(selector)}); select.focus(); select.value = ${selectedValue}; select.dispatchEvent(new Event('change', { bubbles: true })); })()`,
+  );
+  await waitFor(
+    win,
+    `[...document.querySelectorAll('#makable .table-group-pagination')].every(bar => bar.querySelector(${JSON.stringify(selector)})?.value === ${selectedValue}) && document.activeElement.matches(${JSON.stringify(selector)})`,
+  );
 }
 
 async function main() {
@@ -827,6 +844,19 @@ async function main() {
   await waitFor(win, "document.querySelectorAll('#makable tbody tr[data-recipe]').length === 25");
   assert(
     await win.webContents.executeJavaScript(`(() => {
+      const refreshButtons = [...document.querySelectorAll('#makable .table-group-pagination [data-table-action="refresh"]')];
+      return refreshButtons.length === 2 && refreshButtons.every(button => button.hidden);
+    })()`),
+  );
+  assert.equal(
+    await win.webContents.executeJavaScript(`Number(
+      document.querySelector('#makable .analysis-result-count').textContent
+        .match(/; ([\\d,]+) matching combinations\\./)?.[1].replace(/\\D/g, '')
+    )`),
+    resultTotal,
+  );
+  assert(
+    await win.webContents.executeJavaScript(`(() => {
       const navs = [...document.querySelectorAll('#makable .table-pagination.table-group-pagination')];
       return navs.length === 2 && navs.every(nav =>
         nav.querySelector('[data-table-action="page-next"]') &&
@@ -840,6 +870,20 @@ async function main() {
     return Number(count.match(/Page 1 of (\\d+)/)[1]);
   })()`);
   assert(overviewPages > 1);
+  assert(
+    await win.webContents.executeJavaScript(`(() => {
+      const bars = [...document.querySelectorAll('#makable .table-pagination.table-group-pagination')];
+      return bars.length === 2 && ['group-page-size', 'combination-page-size'].every(action =>
+        bars.every(bar => {
+          const select = bar.querySelector('[data-table-action="' + action + '"]');
+          return select.value === '25' && [...select.options].map(option => option.value).join(',') === '10,25,50,100';
+        }));
+    })()`),
+  );
+  await selectPageSize(win, 'group-page-size', 10);
+  await waitFor(win, "document.querySelectorAll('#makable tbody tr[data-recipe]').length === 10");
+  await selectPageSize(win, 'group-page-size', 25);
+  await waitFor(win, "document.querySelectorAll('#makable tbody tr[data-recipe]').length === 25");
   await clickElement(win, '#makable .table-group-pagination [data-table-action="page-next"]');
   await waitFor(
     win,
@@ -952,6 +996,22 @@ async function main() {
         document.querySelectorAll('#makable tbody tr:not(.table-group-pager)').length <= 25;
     })()`),
   );
+  await selectPageSize(win, 'combination-page-size', 10);
+  await waitFor(
+    win,
+    "document.querySelectorAll('#makable tbody tr[data-recipe=meatballs_dst]').length === 10",
+  );
+  assert.equal(
+    await win.webContents.executeJavaScript(
+      "[...document.querySelectorAll('#makable .table-group-pagination [data-table-action=group-page-size]')].every(select => select.value === '25')",
+    ),
+    true,
+  );
+  await selectPageSize(win, 'combination-page-size', 25);
+  await waitFor(
+    win,
+    "document.querySelectorAll('#makable tbody tr[data-recipe=meatballs_dst]').length === 25",
+  );
   await clickElement(win, '#makable .table-combination-pagination [data-table-action="page-last"]');
   await waitFor(
     win,
@@ -964,6 +1024,8 @@ async function main() {
     const toggle = document.querySelector(${JSON.stringify(groupToggle)});
     const header = toggle.closest('tr');
     const button = header.querySelector('.analysis-ingredients');
+    const pagerRow = document.getElementById(toggle.getAttribute('aria-controls').split(/\\s+/).at(-1));
+    const lastRow = rows.at(-1);
     const count = Number(toggle.dataset.count);
     const page = Number(pager.querySelector('.table-page-count').textContent.match(/Page (\\d+) of (\\d+)/)[1]);
     const pages = Number(pager.querySelector('.table-page-count').textContent.match(/Page (\\d+) of (\\d+)/)[2]);
@@ -975,6 +1037,10 @@ async function main() {
       count,
       range,
       bounds: range.match(/Combinations (\\d+)–(\\d+) of (\\d+)/)?.slice(1).map(Number),
+      expandedBoundary: header.classList.contains('table-group-expanded') &&
+        pagerRow.classList.contains('table-group-expanded') &&
+        rows.every(row => row.classList.contains('table-group-expanded')),
+      endBoundary: (rows.length > 1 ? lastRow : pagerRow).classList.contains('table-group-end'),
       ids: [...button.querySelectorAll('.icon')].map(icon => icon.dataset.id),
     };
   })()`);
@@ -986,6 +1052,8 @@ async function main() {
     groupCount,
     groupCount,
   ]);
+  assert.equal(lastCombinationPage.expandedBoundary, true);
+  assert.equal(lastCombinationPage.endBoundary, true);
   await win.webContents.executeJavaScript(
     `document.querySelector(${JSON.stringify(groupToggle)}).focus()`,
   );
@@ -1146,8 +1214,12 @@ async function main() {
   await waitFor(win, "!document.querySelector('#makable .makableContainer')");
   await clickElement(win, '#tab-statistics');
   await clickElement(win, '#statistics .makablebutton');
-  await waitFor(win, "document.querySelector('#statistics progress').value >= 10000");
+  await waitFor(win, "document.querySelector('#statistics progress')?.value >= 10000");
   await clickElement(win, '#statistics .pauseButton');
+  await waitFor(
+    win,
+    "document.querySelector('#statistics .pauseButton')?.textContent === 'Reanudar'",
+  );
   const pausedProgress = await win.webContents.executeJavaScript(`(() => {
     const progress = document.querySelector('#statistics progress');
     return { value: progress.value, max: progress.max };
@@ -1158,6 +1230,50 @@ async function main() {
       "document.querySelector('#statistics progress').getAttribute('aria-label')",
     ),
     'Progreso de comprobación de combinaciones',
+  );
+  const beforeRefresh = await win.webContents.executeJavaScript(`(() => ({
+    rows: document.querySelectorAll('#statistics tbody tr[data-recipe]').length,
+    range: document.querySelector('#statistics .table-group-pagination .table-page-range').textContent,
+    summary: document.querySelector('#statistics .makableSummary').textContent,
+  }))()`);
+  assert(beforeRefresh.rows > 0);
+  assert(
+    await win.webContents.executeJavaScript(`(() => {
+      const buttons = [...document.querySelectorAll('#statistics .table-group-pagination [data-table-action="refresh"]')];
+      return buttons.length === 2 && buttons.every(button => !button.hidden) &&
+        document.querySelector('#statistics .pauseButton').textContent === 'Reanudar';
+    })()`),
+  );
+  await win.webContents.executeJavaScript(
+    "document.querySelector('#statistics .table-group-pagination [data-table-action=refresh]').focus()",
+  );
+  win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Space' });
+  win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Space' });
+  await waitFor(
+    win,
+    "document.querySelector('#statistics [role=status]').textContent.startsWith('Resultados actualizados.')",
+  );
+  assert.deepEqual(
+    await win.webContents.executeJavaScript(`(() => ({
+      rows: document.querySelectorAll('#statistics tbody tr[data-recipe]').length,
+      range: document.querySelector('#statistics .table-group-pagination .table-page-range').textContent,
+      summary: document.querySelector('#statistics .makableSummary').textContent,
+    }))()`),
+    beforeRefresh,
+  );
+  assert.deepEqual(
+    await win.webContents.executeJavaScript(`({
+      value: document.querySelector('#statistics progress').value,
+      max: document.querySelector('#statistics progress').max,
+    })`),
+    pausedProgress,
+  );
+  assert(
+    await win.webContents.executeJavaScript(`(() => {
+      const buttons = [...document.querySelectorAll('#statistics .table-group-pagination [data-table-action="refresh"]')];
+      return buttons.length === 2 && buttons.every(button => !button.hidden) &&
+        document.querySelector('#statistics .pauseButton').textContent === 'Reanudar';
+    })()`),
   );
   await waitFor(
     win,
@@ -1217,7 +1333,7 @@ async function main() {
     (await win.webContents.capturePage()).toPNG(),
   );
   console.log(
-    `Electron smoke passed: ${manifest} sprites, native zoom menus and shortcuts, cooking views and preserved pot selections, search and full-pot feedback, mushroom search, keyboard recipes, grouped ingredient removal and selected-only controls, picker dismissal, tab navigation, mouse ingredient entry, keyboard table sorting, column selection and focus recovery at 200% zoom, horizontal scrolling, immediate saved selections, expandable analysis recipes and Simulator handoff, Discovery filtering and localized pagination, saved theme/language and ingredients after reload, sandbox, blocked popup.`,
+    `Electron smoke passed: ${manifest} sprites, native zoom menus and shortcuts, cooking views and preserved pot selections, search and full-pot feedback, mushroom search, keyboard recipes, grouped ingredient removal and selected-only controls, picker dismissal, tab navigation, mouse ingredient entry, keyboard table sorting, column selection and focus recovery at 200% zoom, horizontal scrolling, immediate saved selections, expandable analysis recipes and Simulator handoff, Discovery filtering, live analysis refresh, independent page sizes and expanded run boundaries, localized pagination, saved theme/language and ingredients after reload, sandbox, blocked popup.`,
   );
 }
 
