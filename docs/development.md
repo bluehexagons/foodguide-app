@@ -19,7 +19,10 @@ save immediately, so recovery does not depend on a normal page unload. Run it wi
 `npm --prefix app/foodguide run test:browser` after installing Chromium in that
 checkout. The native Electron smoke test separately exercises arrow-key tabs,
 ingredient removal with Space, empty-slot activation, Escape/reopening the picker,
-and table sorting with keyboard focus retained. It also checks empty-search status
+and table sorting with keyboard focus retained. It checks the grouping menu with
+native keyboard input, named result groups, option positions, and selected-only
+removal controls while exercising ingredient shortcuts inside grouped results.
+It also checks empty-search status
 feedback, visible full-pot error recovery, manual column selection, focus recovery,
 and horizontal table scrolling at 200% zoom. It also exercises a larger Discovery
 inventory, filtered and localized pagination, immediate selection saves, and

@@ -44,14 +44,18 @@ async function waitFor(win, expression) {
 }
 
 async function clickElement(win, selector) {
-  const position = await win.webContents.executeJavaScript(`(() => {
+  const position = await win.webContents
+    .executeJavaScript(`(() => {
     const element = document.querySelector(${JSON.stringify(selector)});
     if (!element) throw new Error('Missing mouse target');
     element.scrollIntoView({ block: 'center', behavior: 'instant' });
     const rect = element.getBoundingClientRect();
     if (!rect.width || !rect.height) throw new Error('Mouse target is not visible');
     return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
-  })()`);
+  })()`)
+    .catch(error => {
+      throw new Error(`Unable to click ${selector}`, { cause: error });
+    });
   // DOM rectangles use CSS pixels; Electron input uses window coordinates before page zoom.
   const zoom = win.webContents.getZoomFactor();
   const inputPosition = { x: Math.round(position.x * zoom), y: Math.round(position.y * zoom) };
@@ -72,6 +76,11 @@ async function clickElement(win, selector) {
 
 async function main() {
   const [, win] = await created;
+  win.webContents.on('console-message', details => {
+    if (details.level === 'error') {
+      console.error(`Renderer error: ${details.message}`);
+    }
+  });
   await once(win.webContents, 'did-finish-load');
   await waitFor(win, "document.querySelectorAll('#navbar [role=tab]').length === 7");
   assert.equal(win.webContents.getLastWebPreferences().sandbox, true);
@@ -282,6 +291,31 @@ async function main() {
     }
   };
   win.webContents.on('console-message', recordWarning);
+  await clickElement(win, '#simulator .groupingredients');
+  await waitFor(win, "document.activeElement?.dataset.value === 'none'");
+  win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Down' });
+  win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Down' });
+  await waitFor(win, "document.activeElement?.dataset.value === 'type'");
+  win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Return' });
+  win.webContents.sendInputEvent({ type: 'char', keyCode: '\r' });
+  win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Return' });
+  await waitFor(
+    win,
+    "document.querySelector('#simulator .groupingredients').textContent === 'Group by: Ingredient type'",
+  );
+  assert.equal(
+    await win.webContents.executeJavaScript(`(() => {
+      const group = document.querySelector('#simulator .ingredientdropdown [role=group]');
+      const options = [...document.querySelectorAll('#simulator [role=option]')];
+      return document.getElementById(group.getAttribute('aria-labelledby')).textContent ===
+        'Fruit (' + options.length + ')' &&
+        options.every((option, index) =>
+          group.contains(option) && option.getAttribute('aria-posinset') === String(index + 1) &&
+          option.getAttribute('aria-setsize') === String(options.length));
+    })()`),
+    true,
+    'Grouped results must expose their label and global option positions',
+  );
   await clickElement(win, '#ingredients .ingredient:nth-child(4) .icon');
   await waitFor(win, "document.querySelectorAll('#ingredients .icon').length === 3");
   await clickElement(win, '#simulator [role="option"][aria-label="Berries 2"] .text');
@@ -297,6 +331,13 @@ async function main() {
   await waitFor(win, "document.querySelectorAll('#ingredients .icon').length === 3");
   await clickElement(win, '#simulator [role=option][aria-label="Berries 2"] .ingredient-toggle');
   await waitFor(win, "document.querySelectorAll('#ingredients .icon').length === 1");
+  assert.equal(
+    await win.webContents.executeJavaScript(
+      'getComputedStyle(document.querySelector(\'#simulator [data-id="berries@together"] .ingredient-option-actions\')).visibility',
+    ),
+    'hidden',
+    'Unpicked ingredients must hide their removal controls',
+  );
   for (let i = 0; i < 3; i++) {
     await clickElement(win, '#simulator [role=option][data-id="berries@together"] .text');
     await waitFor(win, `document.querySelectorAll('#ingredients .icon').length === ${i + 2}`);
@@ -338,6 +379,16 @@ async function main() {
     await delay(50);
   }
   await waitFor(win, "document.querySelectorAll('#ingredients .icon').length === 4");
+  await clickElement(win, '#simulator .groupingredients');
+  await waitFor(
+    win,
+    "document.querySelector('#simulator .groupingredients').getAttribute('aria-expanded') === 'true'",
+  );
+  await clickElement(win, '#simulator [role=menuitemradio][data-value=none]');
+  await waitFor(
+    win,
+    "document.querySelector('#simulator .ingredientdropdown [role=group]') === null",
+  );
   win.webContents.removeListener('console-message', recordWarning);
   assert.deepEqual(warnings, []);
 
@@ -545,7 +596,10 @@ async function main() {
     );
   }
   await clickElement(win, '#makable .makablebutton');
-  await waitFor(win, "!document.querySelector('#makable .makablebutton').disabled");
+  await waitFor(
+    win,
+    "window.analysis?.made.length > 1000 && !document.querySelector('#makable .makablebutton').disabled",
+  );
   const resultTotal = await win.webContents.executeJavaScript('window.analysis.made.length');
   assert(resultTotal > 1000);
   await waitFor(win, "document.querySelectorAll('#makable tbody tr').length === 500");
@@ -629,7 +683,7 @@ async function main() {
     (await win.webContents.capturePage()).toPNG(),
   );
   console.log(
-    `Electron smoke passed: ${manifest} sprites, native zoom menus and shortcuts, search and full-pot feedback, mushroom search, keyboard recipes, ingredient removal, picker dismissal, tab navigation, mouse ingredient entry, keyboard table sorting, column selection and focus recovery at 200% zoom, horizontal scrolling, immediate saved selections, Discovery filtering and localized pagination, saved theme/language and ingredients after reload, sandbox, blocked popup.`,
+    `Electron smoke passed: ${manifest} sprites, native zoom menus and shortcuts, search and full-pot feedback, mushroom search, keyboard recipes, grouped ingredient removal and selected-only controls, picker dismissal, tab navigation, mouse ingredient entry, keyboard table sorting, column selection and focus recovery at 200% zoom, horizontal scrolling, immediate saved selections, Discovery filtering and localized pagination, saved theme/language and ingredients after reload, sandbox, blocked popup.`,
   );
 }
 
