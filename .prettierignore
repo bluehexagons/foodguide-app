@@ -1,5 +1,0 @@
-app/
-node_modules/
-out/
-.generated/
-package-lock.json

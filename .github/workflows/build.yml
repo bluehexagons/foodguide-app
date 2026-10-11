@@ -2,7 +2,7 @@ name: Build
 
 on:
   push:
-    branches: [main]
+    branches: [main, feature/typescript-migration]
   pull_request:
   workflow_dispatch:
 
@@ -58,7 +58,7 @@ jobs:
         run: npm run check
 
       - name: Audit dependencies
-        run: npm audit
+        run: npm run audit
 
       - name: Smoke-test Electron on Linux
         if: runner.os == 'Linux'

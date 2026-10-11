@@ -1,0 +1,9 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "singleQuote": true,
+  "arrowParens": "avoid",
+  "printWidth": 100,
+  "endOfLine": "lf",
+  "sortPackageJson": false,
+  "ignorePatterns": ["app/", "node_modules/", "out/", ".generated/", "package-lock.json", "dist/"]
+}

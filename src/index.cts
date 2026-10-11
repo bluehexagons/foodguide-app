@@ -1,0 +1,145 @@
+import electron = require('electron');
+import path = require('node:path');
+import url = require('node:url');
+import navigation = require('./lib/navigation.cjs');
+import installerStartup = require('electron-squirrel-startup');
+
+const { app, BrowserWindow, Menu, shell, clipboard } = electron;
+const { pathToFileURL, URL } = url;
+const { isExternalUrl, isGuideUrl, shareGuideUrl } = navigation;
+const root = path.resolve(__dirname, '..');
+
+const guidePath = path.join(root, 'app/foodguide/html/index.htm');
+const guideUrl = pathToFileURL(guidePath).href;
+
+const openExternalUrl = (url: string) => {
+  if (isExternalUrl(url)) {
+    void shell.openExternal(url).catch(() => {
+      // The system browser may be unavailable in restricted environments.
+    });
+  }
+};
+
+const createWindow = (initialUrl = guideUrl) => {
+  const win = new BrowserWindow({
+    show: false,
+    width: 1000,
+    height: 600,
+    icon: path.join(root, 'app/foodguide/html/icon.png'),
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+    },
+  });
+
+  win.webContents.on('did-finish-load', () => {
+    void win.webContents.setVisualZoomLevelLimits(1, 5).catch(error => {
+      console.error('Unable to enable pinch zoom:', error);
+    });
+  });
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (isGuideUrl(url, guideUrl)) {
+      createWindow(url);
+    } else {
+      openExternalUrl(url);
+    }
+    return { action: 'deny' };
+  });
+  const guardNavigation = (event: Electron.Event, url: string) => {
+    if (!isGuideUrl(url, guideUrl)) {
+      event.preventDefault();
+      openExternalUrl(url);
+    }
+  };
+  win.webContents.on('will-navigate', guardNavigation);
+  win.webContents.on('will-redirect', guardNavigation);
+  win.once('ready-to-show', () => win.show());
+  void win.loadFile(guidePath, { hash: new URL(initialUrl).hash.slice(1) }).catch(error => {
+    console.error('Unable to load the Food Guide:', error);
+    app.exit(1);
+  });
+};
+
+// Installer events must skip the entire normal startup path.
+if (installerStartup) {
+  app.quit();
+} else if (!app.requestSingleInstanceLock()) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    const win = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0];
+    if (win) {
+      if (win.isMinimized()) {
+        win.restore();
+      }
+      win.focus();
+    } else if (app.isReady()) {
+      // macOS keeps the app running after its last window closes.
+      createWindow();
+    }
+  });
+  void app
+    .whenReady()
+    .then(() => {
+      const template: Electron.MenuItemConstructorOptions[] = [
+        {
+          role: 'fileMenu',
+          submenu: [
+            {
+              id: 'new-window',
+              label: 'New Window',
+              accelerator: 'CmdOrCtrl+N',
+              click: () => createWindow(),
+            },
+            {
+              id: 'copy-guide-link',
+              label: 'Copy Link to Current Section',
+              accelerator: 'CmdOrCtrl+Shift+C',
+              click: (_item, focusedWindow) => {
+                if (!(focusedWindow instanceof BrowserWindow)) {
+                  return;
+                }
+                const link = shareGuideUrl(focusedWindow.webContents.getURL(), guideUrl);
+                if (link) {
+                  clipboard.writeText(link);
+                }
+              },
+            },
+            { type: 'separator' },
+            { role: process.platform === 'darwin' ? 'close' : 'quit' },
+          ],
+        },
+        { role: 'editMenu' },
+        {
+          role: 'viewMenu',
+          submenu: [
+            { id: 'reset-zoom', role: 'resetZoom' },
+            { id: 'zoom-in', role: 'zoomIn' },
+            { id: 'zoom-out', role: 'zoomOut' },
+          ],
+        },
+        { role: 'windowMenu' },
+      ];
+      if (process.platform === 'darwin') {
+        template.unshift({ role: 'appMenu' });
+      }
+      Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+      createWindow();
+      app.on('activate', () => {
+        if (BrowserWindow.getAllWindows().length === 0) {
+          createWindow();
+        }
+      });
+    })
+    .catch(error => {
+      console.error('Unable to start the Food Guide:', error);
+      app.exit(1);
+    });
+
+  app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') {
+      app.quit();
+    }
+  });
+}
