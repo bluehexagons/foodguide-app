@@ -64,7 +64,18 @@ const createWindow = (initialUrl = guideUrl) => {
 // Installer events must skip the entire normal startup path.
 if (installerStartup) {
   app.quit();
+} else if (!app.requestSingleInstanceLock()) {
+  app.quit();
 } else {
+  app.on('second-instance', () => {
+    const win = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0];
+    if (win) {
+      if (win.isMinimized()) {
+        win.restore();
+      }
+      win.focus();
+    }
+  });
   void app
     .whenReady()
     .then(() => {

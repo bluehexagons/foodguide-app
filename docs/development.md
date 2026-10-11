@@ -113,16 +113,21 @@ page and its anchors. Other local files and remote popups are blocked;
 credential-free HTTPS links go to the system browser. Squirrel installation
 events exit before normal startup.
 
-Internal guide links can open another window with the same sandbox settings.
-**File → New Window** (`Ctrl+N` / `Cmd+N`) opens the last saved setup. Each window
-has its own working ingredients and picker preferences. Fragment URLs include the
-section, game, and active picker state; reloading one window does not restore
-another window's work. Theme and language remain shared.
+Startup obtains Electron's single-instance lock. A second launch quits its new
+process and asks the existing window to restore/focus. Optional **File → New Window**
+(`Ctrl+N` / `Cmd+N`) and vetted internal guide links create additional windows with
+the same sandbox settings. Each window keeps its own pot, selected inventory ID,
+game context, and picker views. Inventories, cookbook dishes, theme, and language
+share the app's local profile. The guide uses Web Locks for coordinated inventory
+edits and storage events for updates.
 
 **File → Copy Link to Current Section** (`Ctrl+Shift+C` / `Cmd+Shift+C`) converts
-the focused window's validated local URL into an HTTPS link to the web guide.
-It includes the fragment state and excludes the installation path. The menu
-writes to the clipboard only when selected.
+the focused window's validated local URL into an HTTPS section/game link. The
+guide's **Share** dialog explicitly includes a pot or inventory snapshot. It also
+uses an HTTPS destination, never the installation path. Clipboard writes occur
+only on a user's copy action, and the dialog offers a selected text fallback.
+**My data** uses the browser's file input and download APIs for validated JSON
+backup import/export; no renderer Node access or new preload bridge is needed.
 
 ## Checks
 

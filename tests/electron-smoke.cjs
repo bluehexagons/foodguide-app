@@ -824,7 +824,7 @@ async function main() {
     win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Return' });
     await waitFor(
       win,
-      `JSON.parse(localStorage.getItem('foodGuideState')).pickers[1].length === ${index + 1}`,
+      `JSON.parse(localStorage.getItem('foodGuidePersonalData')).inventories[0].ingredients.length === ${index + 1}`,
     );
   }
   await clickElement(win, '#makable .makablebutton');
@@ -1327,6 +1327,27 @@ async function main() {
   await delay(100);
   assert.equal(BrowserWindow.getAllWindows().length, 1);
 
+  await clickElement(win, '#cookbook-save button');
+  await waitFor(
+    win,
+    "JSON.parse(localStorage.getItem('foodGuidePersonalData')).dishes.length === 1",
+  );
+  await clickElement(win, '#personal-share-button');
+  await waitFor(
+    win,
+    "document.querySelector('#personal-share-link')?.value.startsWith('https://foodguide.bluehexagons.com/index.htm#simulator')",
+  );
+  assert(
+    await win.webContents.executeJavaScript(
+      "document.querySelector('#personal-share-link').value.includes('ingredients=')",
+    ),
+  );
+  assert.equal(
+    await win.webContents.executeJavaScript("location.hash.includes('ingredients=')"),
+    false,
+  );
+  await clickElement(win, 'dialog[open] .personal-dialog-close');
+
   const sourcePot = await win.webContents.executeJavaScript(
     "Array.from(document.querySelectorAll('#ingredients [data-id]'), slot => slot.dataset.id)",
   );
@@ -1346,6 +1367,41 @@ async function main() {
       "document.querySelectorAll('#inventory [data-id]').length",
     ),
     inventoryNames.length,
+  );
+  const originalInventoryId = await win.webContents.executeJavaScript(
+    "document.querySelector('#inventory-select').value",
+  );
+  await clickElement(linkedWindow, '#inventory-new');
+  await waitFor(linkedWindow, "document.querySelectorAll('#inventory [data-id]').length === 0");
+  await waitFor(win, "document.querySelectorAll('#inventory-select option').length === 2");
+  assert.equal(
+    await win.webContents.executeJavaScript("document.querySelector('#inventory-select').value"),
+    originalInventoryId,
+  );
+  assert.equal(
+    await win.webContents.executeJavaScript(
+      "document.querySelectorAll('#inventory [data-id]').length",
+    ),
+    inventoryNames.length,
+  );
+  await linkedWindow.webContents.executeJavaScript(`(() => {
+    const select = document.querySelector('#inventory-select'); select.value = ${JSON.stringify(originalInventoryId)};
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+  })()`);
+  await waitFor(
+    linkedWindow,
+    `document.querySelectorAll('#inventory [data-id]').length === ${inventoryNames.length}`,
+  );
+  await clickElement(linkedWindow, '#inventory [data-id]');
+  await waitFor(
+    win,
+    `document.querySelectorAll('#inventory [data-id]').length === ${inventoryNames.length - 1}`,
+  );
+  assert.equal(
+    await linkedWindow.webContents.executeJavaScript(
+      "document.querySelectorAll('#personal-cookbook .cookbook-list button').length",
+    ),
+    2,
   );
   await linkedWindow.webContents.executeJavaScript(
     "location.hash = '#simulator?game=together&ingredients=carrot%40together'",
@@ -1380,7 +1436,7 @@ async function main() {
     (await win.webContents.capturePage()).toPNG(),
   );
   console.log(
-    `Electron smoke passed: ${manifest} sprites, native zoom menus and shortcuts, cooking views and preserved pot selections, search and full-pot feedback, mushroom search, keyboard recipes, grouped ingredient removal and selected-only controls, picker dismissal, tab navigation, mouse ingredient entry, keyboard table sorting, column selection and focus recovery at 200% zoom, horizontal scrolling, immediate saved selections, expandable analysis recipes and Simulator handoff, Discovery filtering, live analysis refresh, independent page sizes and expanded run boundaries, localized pagination, saved theme/language and ingredients after reload, sandbox, blocked popup, internal section links in independent windows, source-window reload isolation, and New Window menu.`,
+    `Electron smoke passed: ${manifest} sprites, native zoom menus and shortcuts, cooking views and preserved pot selections, search and full-pot feedback, mushroom search, keyboard recipes, grouped ingredient removal and selected-only controls, picker dismissal, tab navigation, mouse ingredient entry, keyboard table sorting, column selection and focus recovery at 200% zoom, horizontal scrolling, immediate saved selections, expandable analysis recipes and Simulator handoff, Discovery filtering, live analysis refresh, independent page sizes and expanded run boundaries, localized pagination, saved theme/language and ingredients after reload, sandbox, blocked popup, internal section links in independent windows, source-window reload isolation, shared multi-inventory edits, cookbook saving, explicit HTTPS sharing, and New Window menu.`,
   );
 }
 

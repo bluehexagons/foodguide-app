@@ -11,11 +11,17 @@ const { ignoreFile } = require('../dist/lib/packaging.cjs');
 const root = path.resolve(__dirname, '..');
 const entryUrl = pathToFileURL(path.join(root, 'app/foodguide/html/index.htm')).href;
 
-async function startWrapper({ installer = false, platform = 'linux', loadError = null } = {}) {
+async function startWrapper({
+  installer = false,
+  platform = 'linux',
+  loadError = null,
+  singleInstance = true,
+} = {}) {
   const calls = { windows: [], external: [], clipboard: [], quit: 0, ready: 0, exit: [] };
   const app = Object.assign(new EventEmitter(), {
     quit: () => calls.quit++,
     exit: code => calls.exit.push(code),
+    requestSingleInstanceLock: () => singleInstance,
     whenReady: () => {
       calls.ready++;
       return Promise.resolve();
@@ -38,6 +44,19 @@ async function startWrapper({ installer = false, platform = 'linux', loadError =
     }
     static getAllWindows() {
       return calls.windows;
+    }
+    static getFocusedWindow() {
+      return calls.windows.find(win => win.focused);
+    }
+    isMinimized() {
+      return this.minimized === true;
+    }
+    restore() {
+      this.minimized = false;
+      this.restored = true;
+    }
+    focus() {
+      this.focused = true;
     }
     show() {
       this.visible = true;
@@ -90,6 +109,23 @@ test('installer events quit without scheduling startup or creating windows', asy
   assert.equal(calls.windows.length, 0);
   assert.equal(app.eventNames().length, 0);
   assert.equal(calls.menu, undefined);
+});
+
+test('a second launch quits without starting another app process or window', async () => {
+  const { calls } = await startWrapper({ singleInstance: false });
+  assert.equal(calls.quit, 1);
+  assert.equal(calls.ready, 0);
+  assert.equal(calls.windows.length, 0);
+});
+
+test('launching again restores and focuses the existing window', async () => {
+  const { app, calls } = await startWrapper();
+  const win = calls.windows[0];
+  win.minimized = true;
+  app.emit('second-instance');
+  assert.equal(calls.windows.length, 1);
+  assert.equal(win.restored, true);
+  assert.equal(win.focused, true);
 });
 
 test('the guide opens in a sandbox with native zoom controls and pinch zoom after each load', async () => {
