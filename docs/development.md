@@ -107,7 +107,22 @@ through its TypeScript configuration support after the scripts have been built.
 JavaScript tests run against the compiled runtime. The small `image-size-compat`
 installation adapter remains JavaScript so it can run during dependency installation.
 
-The wrapper loads the bundled entry page with Node integration disabled, context isolation enabled, and renderer sandboxing enabled. It allows navigation to that page and its anchors. Internal guide links can open a new window with the same sandbox settings, and **File → New Window** (`Ctrl+N` / `Cmd+N`) opens the last saved setup. Each window has its own working ingredients and picker preferences; the guide uses fragment URLs for section, game, and active picker state. Reloading one window does not restore another window's working state. Theme and language remain shared. Other local files and remote popups are blocked; credential-free HTTPS links go to the system browser. Squirrel installation events exit before normal startup.
+The wrapper loads the bundled entry page with Node integration disabled, context
+isolation enabled, and renderer sandboxing enabled. It allows navigation to that
+page and its anchors. Other local files and remote popups are blocked;
+credential-free HTTPS links go to the system browser. Squirrel installation
+events exit before normal startup.
+
+Internal guide links can open another window with the same sandbox settings.
+**File → New Window** (`Ctrl+N` / `Cmd+N`) opens the last saved setup. Each window
+has its own working ingredients and picker preferences. Fragment URLs include the
+section, game, and active picker state; reloading one window does not restore
+another window's work. Theme and language remain shared.
+
+**File → Copy Link to Current Section** (`Ctrl+Shift+C` / `Cmd+Shift+C`) converts
+the focused window's validated local URL into an HTTPS link to the web guide.
+It includes the fragment state and excludes the installation path. The menu
+writes to the clipboard only when selected.
 
 ## Checks
 

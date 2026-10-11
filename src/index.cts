@@ -4,9 +4,9 @@ import url = require('node:url');
 import navigation = require('./lib/navigation.cjs');
 import installerStartup = require('electron-squirrel-startup');
 
-const { app, BrowserWindow, Menu, shell } = electron;
+const { app, BrowserWindow, Menu, shell, clipboard } = electron;
 const { pathToFileURL, URL } = url;
-const { isExternalUrl, isGuideUrl } = navigation;
+const { isExternalUrl, isGuideUrl, shareGuideUrl } = navigation;
 const root = path.resolve(__dirname, '..');
 
 const guidePath = path.join(root, 'app/foodguide/html/index.htm');
@@ -77,6 +77,20 @@ if (installerStartup) {
               label: 'New Window',
               accelerator: 'CmdOrCtrl+N',
               click: () => createWindow(),
+            },
+            {
+              id: 'copy-guide-link',
+              label: 'Copy Link to Current Section',
+              accelerator: 'CmdOrCtrl+Shift+C',
+              click: (_item, focusedWindow) => {
+                if (!(focusedWindow instanceof BrowserWindow)) {
+                  return;
+                }
+                const link = shareGuideUrl(focusedWindow.webContents.getURL(), guideUrl);
+                if (link) {
+                  clipboard.writeText(link);
+                }
+              },
             },
             { type: 'separator' },
             { role: process.platform === 'darwin' ? 'close' : 'quit' },

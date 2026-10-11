@@ -16,3 +16,13 @@ export const isGuideUrl = (value: string, entryUrl: string) => {
     return false;
   }
 };
+
+/** Share a web destination rather than leaking the desktop installation's file path. */
+export const shareGuideUrl = (value: string, entryUrl: string) => {
+  if (!isGuideUrl(value, entryUrl)) {
+    return null;
+  }
+  const destination = new URL('https://foodguide.bluehexagons.com/index.htm');
+  destination.hash = new URL(value).hash;
+  return destination.href;
+};

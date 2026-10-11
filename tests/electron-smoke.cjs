@@ -120,6 +120,7 @@ async function main() {
 
   const menu = Menu.getApplicationMenu();
   assert(menu);
+  assert.equal(menu.getMenuItemById('copy-guide-link')?.accelerator, 'CmdOrCtrl+Shift+C');
   // Page load can precede showing/OS focus; native menu shortcuts need a focused window.
   if (!win.isVisible()) {
     await once(win, 'ready-to-show');

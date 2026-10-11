@@ -5,14 +5,14 @@ const path = require('node:path');
 const { test } = require('node:test');
 const { pathToFileURL } = require('node:url');
 const vm = require('node:vm');
-const { isExternalUrl, isGuideUrl } = require('../dist/lib/navigation.cjs');
+const { isExternalUrl, isGuideUrl, shareGuideUrl } = require('../dist/lib/navigation.cjs');
 const { ignoreFile } = require('../dist/lib/packaging.cjs');
 
 const root = path.resolve(__dirname, '..');
 const entryUrl = pathToFileURL(path.join(root, 'app/foodguide/html/index.htm')).href;
 
 async function startWrapper({ installer = false, platform = 'linux', loadError = null } = {}) {
-  const calls = { windows: [], external: [], quit: 0, ready: 0, exit: [] };
+  const calls = { windows: [], external: [], clipboard: [], quit: 0, ready: 0, exit: [] };
   const app = Object.assign(new EventEmitter(), {
     quit: () => calls.quit++,
     exit: code => calls.exit.push(code),
@@ -57,6 +57,7 @@ async function startWrapper({ installer = false, platform = 'linux', loadError =
         calls.menu = menu;
       },
     },
+    clipboard: { writeText: text => calls.clipboard.push(text) },
     shell: {
       openExternal: url => {
         calls.external.push(url);
@@ -255,4 +256,23 @@ test('guide links and the New Window menu create independent sandboxed guide win
   assert.equal(calls.windows.length, 3);
   assert.equal(calls.windows[2].loadOptions.hash, '');
   assert.deepEqual(calls.external, []);
+});
+
+test('Copy Link shares the current section through the web guide and never exposes local files', async () => {
+  const { calls } = await startWrapper();
+  const copy = calls.menu
+    .find(item => item.role === 'fileMenu')
+    .submenu.find(item => item.id === 'copy-guide-link');
+  const hash = '#simulator?game=together&ingredients=meat%40together';
+  const webUrl = `https://foodguide.bluehexagons.com/index.htm${hash}`;
+  assert.equal(shareGuideUrl(`${entryUrl}${hash}`, entryUrl), webUrl);
+  assert.equal(shareGuideUrl('file:///etc/passwd#about', entryUrl), null);
+  assert.equal(shareGuideUrl(`${entryUrl}?unexpected=1`, entryUrl), null);
+  calls.windows[0].webContents.getURL = () => `${entryUrl}${hash}`;
+  copy.click(undefined, calls.windows[0]);
+  assert.deepEqual(calls.clipboard, [webUrl]);
+  assert.doesNotThrow(() => copy.click(undefined, undefined));
+  calls.windows[0].webContents.getURL = () => 'file:///etc/passwd';
+  copy.click(undefined, calls.windows[0]);
+  assert.deepEqual(calls.clipboard, [webUrl]);
 });

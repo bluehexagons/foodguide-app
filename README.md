@@ -33,7 +33,12 @@ For an existing checkout, run `git submodule update --init --recursive` before i
 The wrapper is written in strict TypeScript. Starting and packaging automatically compile
 the wrapper and embedded guide, then generate sprite sheets and platform icons from the guide's assets. Generated files stay out of Git.
 
-Use **File → New Window** (`Ctrl+N` / `Cmd+N`) to compare independently. Section links can also open in another guide window. Each window preserves its own ingredients and picker settings when reloaded; theme and language changes synchronize across windows. The # links beside food and recipe names open a highlighted entry.
+Use **File → New Window** (`Ctrl+N` / `Cmd+N`) to compare independently. Section
+links can also open in another guide window. Each window preserves its own
+ingredients and picker settings when reloaded; theme and language changes
+synchronize across windows. The # links beside food and recipe names open a
+highlighted entry. **File → Copy Link to Current Section** (`Ctrl+Shift+C` /
+`Cmd+Shift+C`) copies a shareable web link with the current game and pot or inventory.
 
 ## Validate changes
 
