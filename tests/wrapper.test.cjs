@@ -42,8 +42,9 @@ async function startWrapper({ installer = false, platform = 'linux', loadError =
     show() {
       this.visible = true;
     }
-    loadFile(file) {
+    loadFile(file, options) {
       this.file = file;
+      this.loadOptions = options;
       return loadError ? Promise.reject(loadError) : Promise.resolve();
     }
   }
@@ -233,4 +234,25 @@ test('packaging keeps runtime files and excludes guide development dependencies'
     assert.equal(ignoreFile(file), true, file);
     assert.equal(ignoreFile(file.replaceAll('/', '\\')), true, file);
   }
+});
+
+test('guide links and the New Window menu create independent sandboxed guide windows', async () => {
+  const { calls } = await startWrapper();
+  const source = calls.windows[0];
+  const destination = `${entryUrl}#discovery?game=together&inventory=carrot%40together`;
+  assert.equal(source.openHandler({ url: destination }).action, 'deny');
+  assert.equal(calls.windows.length, 2);
+  const linked = calls.windows[1];
+  assert.equal(linked.file, source.file);
+  assert.equal(linked.loadOptions.hash, new URL(destination).hash.slice(1));
+  assert.equal(linked.options.webPreferences.sandbox, true);
+  assert.equal(linked.options.webPreferences.nodeIntegration, false);
+  const newWindow = calls.menu
+    .find(item => item.role === 'fileMenu')
+    .submenu.find(item => item.id === 'new-window');
+  assert.equal(newWindow.accelerator, 'CmdOrCtrl+N');
+  newWindow.click();
+  assert.equal(calls.windows.length, 3);
+  assert.equal(calls.windows[2].loadOptions.hash, '');
+  assert.deepEqual(calls.external, []);
 });

@@ -5,7 +5,7 @@ import navigation = require('./lib/navigation.cjs');
 import installerStartup = require('electron-squirrel-startup');
 
 const { app, BrowserWindow, Menu, shell } = electron;
-const { pathToFileURL } = url;
+const { pathToFileURL, URL } = url;
 const { isExternalUrl, isGuideUrl } = navigation;
 const root = path.resolve(__dirname, '..');
 
@@ -20,7 +20,7 @@ const openExternalUrl = (url: string) => {
   }
 };
 
-const createWindow = () => {
+const createWindow = (initialUrl = guideUrl) => {
   const win = new BrowserWindow({
     show: false,
     width: 1000,
@@ -39,7 +39,11 @@ const createWindow = () => {
     });
   });
   win.webContents.setWindowOpenHandler(({ url }) => {
-    openExternalUrl(url);
+    if (isGuideUrl(url, guideUrl)) {
+      createWindow(url);
+    } else {
+      openExternalUrl(url);
+    }
     return { action: 'deny' };
   });
   const guardNavigation = (event: Electron.Event, url: string) => {
@@ -51,7 +55,7 @@ const createWindow = () => {
   win.webContents.on('will-navigate', guardNavigation);
   win.webContents.on('will-redirect', guardNavigation);
   win.once('ready-to-show', () => win.show());
-  void win.loadFile(guidePath).catch(error => {
+  void win.loadFile(guidePath, { hash: new URL(initialUrl).hash.slice(1) }).catch(error => {
     console.error('Unable to load the Food Guide:', error);
     app.exit(1);
   });
@@ -65,7 +69,19 @@ if (installerStartup) {
     .whenReady()
     .then(() => {
       const template: Electron.MenuItemConstructorOptions[] = [
-        { role: 'fileMenu' },
+        {
+          role: 'fileMenu',
+          submenu: [
+            {
+              id: 'new-window',
+              label: 'New Window',
+              accelerator: 'CmdOrCtrl+N',
+              click: () => createWindow(),
+            },
+            { type: 'separator' },
+            { role: process.platform === 'darwin' ? 'close' : 'quit' },
+          ],
+        },
         { role: 'editMenu' },
         {
           role: 'viewMenu',

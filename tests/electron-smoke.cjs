@@ -115,7 +115,7 @@ async function main() {
   assert.equal(await win.webContents.executeJavaScript('typeof require'), 'undefined');
   assert.equal(
     await win.webContents.executeJavaScript('document.title'),
-    "Don't Starve Food Guide",
+    "Simulator — Don't Starve Food Guide",
   );
 
   const menu = Menu.getApplicationMenu();
@@ -1326,6 +1326,52 @@ async function main() {
   await delay(100);
   assert.equal(BrowserWindow.getAllWindows().length, 1);
 
+  const sourcePot = await win.webContents.executeJavaScript(
+    "Array.from(document.querySelectorAll('#ingredients [data-id]'), slot => slot.dataset.id)",
+  );
+  const linkedCreated = once(app, 'browser-window-created');
+  await win.webContents.executeJavaScript(
+    "window.open(document.querySelector('#tab-discovery').href)",
+  );
+  const [, linkedWindow] = await linkedCreated;
+  await waitFor(
+    linkedWindow,
+    "document.querySelector('#tab-discovery')?.getAttribute('aria-selected') === 'true'",
+  );
+  assert.equal(linkedWindow.webContents.getLastWebPreferences().sandbox, true);
+  assert.equal(linkedWindow.webContents.getLastWebPreferences().nodeIntegration, false);
+  assert.equal(
+    await linkedWindow.webContents.executeJavaScript(
+      "document.querySelectorAll('#inventory [data-id]').length",
+    ),
+    inventoryNames.length,
+  );
+  await linkedWindow.webContents.executeJavaScript(
+    "location.hash = '#simulator?game=together&ingredients=carrot%40together'",
+  );
+  await waitFor(
+    linkedWindow,
+    "document.querySelector('#ingredients [data-id=\"carrot@together\"]') !== null && document.querySelectorAll('#ingredients [data-id]').length === 1",
+  );
+  const sourceReloaded = once(win.webContents, 'did-finish-load');
+  win.webContents.reload();
+  await sourceReloaded;
+  await waitFor(win, "document.querySelectorAll('#navbar [role=tab]').length === 7");
+  assert.deepEqual(
+    await win.webContents.executeJavaScript(
+      "Array.from(document.querySelectorAll('#ingredients [data-id]'), slot => slot.dataset.id)",
+    ),
+    sourcePot,
+  );
+  linkedWindow.destroy();
+  const menuCreated = once(app, 'browser-window-created');
+  menu.getMenuItemById('new-window').click(undefined, win, win.webContents);
+  const [, menuWindow] = await menuCreated;
+  await waitFor(menuWindow, "document.querySelectorAll('#navbar [role=tab]').length === 7");
+  assert.equal(menuWindow.webContents.getLastWebPreferences().contextIsolation, true);
+  menuWindow.destroy();
+  assert.equal(BrowserWindow.getAllWindows().length, 1);
+
   const output = path.join(__dirname, '../out/test-results');
   await mkdir(output, { recursive: true });
   await writeFile(
@@ -1333,7 +1379,7 @@ async function main() {
     (await win.webContents.capturePage()).toPNG(),
   );
   console.log(
-    `Electron smoke passed: ${manifest} sprites, native zoom menus and shortcuts, cooking views and preserved pot selections, search and full-pot feedback, mushroom search, keyboard recipes, grouped ingredient removal and selected-only controls, picker dismissal, tab navigation, mouse ingredient entry, keyboard table sorting, column selection and focus recovery at 200% zoom, horizontal scrolling, immediate saved selections, expandable analysis recipes and Simulator handoff, Discovery filtering, live analysis refresh, independent page sizes and expanded run boundaries, localized pagination, saved theme/language and ingredients after reload, sandbox, blocked popup.`,
+    `Electron smoke passed: ${manifest} sprites, native zoom menus and shortcuts, cooking views and preserved pot selections, search and full-pot feedback, mushroom search, keyboard recipes, grouped ingredient removal and selected-only controls, picker dismissal, tab navigation, mouse ingredient entry, keyboard table sorting, column selection and focus recovery at 200% zoom, horizontal scrolling, immediate saved selections, expandable analysis recipes and Simulator handoff, Discovery filtering, live analysis refresh, independent page sizes and expanded run boundaries, localized pagination, saved theme/language and ingredients after reload, sandbox, blocked popup, internal section links in independent windows, source-window reload isolation, and New Window menu.`,
   );
 }
 
