@@ -32,9 +32,16 @@ Food, recipe, Simulator, and Discovery stat columns also sort using the displaye
 character values. Guide tests cover both directions while preserving summary
 rows and missing-value ordering.
 Ingredient, tab, and game changes
-save immediately, so recovery does not depend on a normal page unload. Run it with
-`npm --prefix app/foodguide run test:browser` after installing Chromium in that
-checkout. The native Electron smoke test separately exercises arrow-key tabs,
+save immediately, so recovery does not depend on a normal page unload. Install
+the guide's Playwright browsers with `npx playwright install chromium firefox`
+inside `app/foodguide`. Run the Chromium suite with
+`npm --prefix app/foodguide run test:browser`, or add `-- --browser=firefox` to
+run the shared suite in Firefox. Add `--headed` to open a visible test browser
+in a graphical session. Guide CI and deployment checks require both browsers.
+Chromium additionally covers three tests that inject trusted scrolling and
+canceled touch gestures through CDP. Firefox explicitly skips those tests and
+retains emulated touch taps, mobile layouts, keyboard flows, and accessibility scans.
+The native Electron smoke test separately exercises arrow-key tabs,
 ingredient removal with Space, empty-slot activation, Escape/reopening the picker,
 and table sorting with keyboard focus retained. It checks the grouping menu with
 native keyboard input, named result groups, option positions, and selected-only
