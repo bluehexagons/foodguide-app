@@ -74,6 +74,9 @@ if (installerStartup) {
         win.restore();
       }
       win.focus();
+    } else if (app.isReady()) {
+      // macOS keeps the app running after its last window closes.
+      createWindow();
     }
   });
   void app

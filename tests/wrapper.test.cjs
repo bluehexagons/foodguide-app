@@ -22,6 +22,7 @@ async function startWrapper({
     quit: () => calls.quit++,
     exit: code => calls.exit.push(code),
     requestSingleInstanceLock: () => singleInstance,
+    isReady: () => true,
     whenReady: () => {
       calls.ready++;
       return Promise.resolve();
@@ -126,6 +127,19 @@ test('launching again restores and focuses the existing window', async () => {
   assert.equal(calls.windows.length, 1);
   assert.equal(win.restored, true);
   assert.equal(win.focused, true);
+});
+
+test('launching again reopens a window when the macOS app is still running without one', async () => {
+  const { app, calls } = await startWrapper({ platform: 'darwin' });
+  calls.windows.length = 0;
+  app.emit('window-all-closed');
+  assert.equal(calls.quit, 0);
+  app.emit('second-instance');
+  assert.equal(calls.windows.length, 1);
+  assert.equal(calls.windows[0].file, path.join(root, 'app/foodguide/html/index.htm'));
+  app.emit('second-instance');
+  assert.equal(calls.windows.length, 1);
+  assert.equal(calls.windows[0].focused, true);
 });
 
 test('the guide opens in a sandbox with native zoom controls and pinch zoom after each load', async () => {
