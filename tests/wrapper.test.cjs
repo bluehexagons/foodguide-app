@@ -9,7 +9,7 @@ const { isExternalUrl, isGuideUrl, shareGuideUrl } = require('../dist/lib/naviga
 const { ignoreFile } = require('../dist/lib/packaging.cjs');
 
 const root = path.resolve(__dirname, '..');
-const entryUrl = pathToFileURL(path.join(root, 'app/foodguide/html/index.htm')).href;
+const entryUrl = pathToFileURL(path.join(root, 'app/foodguide/html/index.html')).href;
 
 async function startWrapper({
   installer = false,
@@ -136,7 +136,7 @@ test('launching again reopens a window when the macOS app is still running witho
   assert.equal(calls.quit, 0);
   app.emit('second-instance');
   assert.equal(calls.windows.length, 1);
-  assert.equal(calls.windows[0].file, path.join(root, 'app/foodguide/html/index.htm'));
+  assert.equal(calls.windows[0].file, path.join(root, 'app/foodguide/html/index.html'));
   app.emit('second-instance');
   assert.equal(calls.windows.length, 1);
   assert.equal(calls.windows[0].focused, true);
@@ -314,7 +314,7 @@ test('Copy Link shares the current section through the web guide and never expos
     .find(item => item.role === 'fileMenu')
     .submenu.find(item => item.id === 'copy-guide-link');
   const hash = '#simulator?game=together&ingredients=meat%40together';
-  const webUrl = `https://foodguide.bluehexagons.com/index.htm${hash}`;
+  const webUrl = `https://foodguide.bluehexagons.com/${hash}`;
   assert.equal(shareGuideUrl(`${entryUrl}${hash}`, entryUrl), webUrl);
   assert.equal(shareGuideUrl('file:///etc/passwd#about', entryUrl), null);
   assert.equal(shareGuideUrl(`${entryUrl}?unexpected=1`, entryUrl), null);

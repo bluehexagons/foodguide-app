@@ -22,7 +22,7 @@ export const shareGuideUrl = (value: string, entryUrl: string) => {
   if (!isGuideUrl(value, entryUrl)) {
     return null;
   }
-  const destination = new URL('https://foodguide.bluehexagons.com/index.htm');
+  const destination = new URL('https://foodguide.bluehexagons.com/');
   destination.hash = new URL(value).hash;
   return destination.href;
 };

@@ -61,7 +61,28 @@ export function verifyPackage(outputPath: string, platform: string) {
     }
   };
   verifyModule('/app/foodguide/html/foodguide.js');
-  verifyModule('/app/foodguide/html/legacy-browser-warning.js');
+  verifyModule('/app/foodguide/html/entry-redirect.js');
+
+  const visitedStyles = new Set<string>();
+  const verifyStyle = (filename: string) => {
+    assert(packagedFiles.has(filename), `Missing packaged asset: ${filename}`);
+    if (visitedStyles.has(filename)) {
+      return;
+    }
+    visitedStyles.add(filename);
+    const source = extractFile(archive, path.normalize(filename.slice(1))).toString('utf8');
+    for (const [, reference] of source.matchAll(/url\(\s*['"]?([^'"()\s]+)['"]?\s*\)/g)) {
+      if (/^(?:data:|https?:|#)/.test(reference)) {
+        continue;
+      }
+      const asset = path.posix.join(path.posix.dirname(filename), reference.split(/[?#]/)[0]);
+      assert(packagedFiles.has(asset), `Missing packaged asset: ${asset}`);
+      if (asset.endsWith('.css')) {
+        verifyStyle(asset);
+      }
+    }
+  };
+  verifyStyle('/app/foodguide/html/style/main.css');
 
   const guideRoot = 'app/foodguide/html/';
   const manifest = parseSpriteManifest(

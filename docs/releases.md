@@ -1,6 +1,6 @@
 # Releases
 
-The Build workflow runs checks, dependency audits for both repositories, native Electron smoke tests, and Forge builds on Windows, Linux, and macOS. It runs for `main`, `feature/typescript-migration`, pull requests, and manual dispatches, and uploads artifacts for three days.
+The Build workflow runs checks, dependency audits for both repositories, native Electron smoke tests, and Forge builds on Windows, Linux, and macOS. It runs for `main`, pull requests, and manual dispatches, and uploads artifacts for three days.
 
 The Release workflow checks, audits both dependency sets, requires the native
 Electron smoke test, and builds Windows and Linux for version tags. It publishes

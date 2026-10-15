@@ -1,6 +1,7 @@
 const assert = require('node:assert/strict');
 const { spawnSync } = require('node:child_process');
-const { readFileSync } = require('node:fs');
+const { readFileSync, mkdtempSync, writeFileSync, rmSync } = require('node:fs');
+const { tmpdir } = require('node:os');
 const { createRequire } = require('node:module');
 const path = require('node:path');
 const { test } = require('node:test');
@@ -69,4 +70,20 @@ test('malformed ICNS entries fail without hanging the packaging process', () => 
   );
   assert.ifError(result.error);
   assert.equal(result.status, 0, result.stderr);
+});
+
+test('invalid files report parser errors through callbacks without throwing asynchronously', async () => {
+  const directory = mkdtempSync(path.join(tmpdir(), 'foodguide-invalid-image-'));
+  try {
+    const file = path.join(directory, 'invalid.png');
+    writeFileSync(file, 'invalid image');
+    await assert.rejects(
+      new Promise((resolve, reject) => {
+        sizeOf(file, (error, size) => (error ? reject(error) : resolve(size)));
+      }),
+    );
+    assert.throws(() => sizeOf(file));
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
 });

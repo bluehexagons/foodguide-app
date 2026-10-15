@@ -9,7 +9,7 @@ const { pathToFileURL, URL } = url;
 const { isExternalUrl, isGuideUrl, shareGuideUrl } = navigation;
 const root = path.resolve(__dirname, '..');
 
-const guidePath = path.join(root, 'app/foodguide/html/index.htm');
+const guidePath = path.join(root, 'app/foodguide/html/index.html');
 const guideUrl = pathToFileURL(guidePath).href;
 
 const openExternalUrl = (url: string) => {

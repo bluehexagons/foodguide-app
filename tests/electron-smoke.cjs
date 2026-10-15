@@ -1335,7 +1335,7 @@ async function main() {
   await clickElement(win, '#personal-share-button');
   await waitFor(
     win,
-    "document.querySelector('#personal-share-link')?.value.startsWith('https://foodguide.bluehexagons.com/index.htm#simulator')",
+    "document.querySelector('#personal-share-link')?.value.startsWith('https://foodguide.bluehexagons.com/#simulator')",
   );
   assert(
     await win.webContents.executeJavaScript(
@@ -1346,7 +1346,40 @@ async function main() {
     await win.webContents.executeJavaScript("location.hash.includes('ingredients=')"),
     false,
   );
+  await win.webContents.executeJavaScript(`(() => {
+    const target = document.querySelector('#personal-share-destination');
+    target.value = 'repository';
+    target.dispatchEvent(new Event('change', { bubbles: true }));
+  })()`);
+  assert.equal(
+    await win.webContents.executeJavaScript("document.querySelector('#personal-share-link').value"),
+    'https://github.com/bluehexagons/foodguide',
+  );
   await clickElement(win, 'dialog[open] .personal-dialog-close');
+  await clickElement(win, '#personal-share-button');
+  assert.equal(
+    await win.webContents.executeJavaScript(
+      "document.querySelector('#personal-share-destination').value",
+    ),
+    'repository',
+  );
+  await clickElement(win, 'dialog[open] .personal-dialog-close');
+  await clickElement(win, '#personal-options-button');
+  assert.equal(
+    await win.webContents.executeJavaScript(
+      "document.querySelectorAll('input[name=options-theme]').length",
+    ),
+    3,
+  );
+  assert.equal(
+    await win.webContents.executeJavaScript(
+      "document.querySelector('#options-language').value === document.querySelector('#language-picker').value",
+    ),
+    true,
+  );
+  win.webContents.sendInputEvent({ type: 'mouseDown', button: 'left', clickCount: 1, x: 8, y: 8 });
+  win.webContents.sendInputEvent({ type: 'mouseUp', button: 'left', clickCount: 1, x: 8, y: 8 });
+  await waitFor(win, "!document.querySelector('dialog[open]')");
 
   const sourcePot = await win.webContents.executeJavaScript(
     "Array.from(document.querySelectorAll('#ingredients [data-id]'), slot => slot.dataset.id)",
@@ -1436,7 +1469,7 @@ async function main() {
     (await win.webContents.capturePage()).toPNG(),
   );
   console.log(
-    `Electron smoke passed: ${manifest} sprites, native zoom menus and shortcuts, cooking views and preserved pot selections, search and full-pot feedback, mushroom search, keyboard recipes, grouped ingredient removal and selected-only controls, picker dismissal, tab navigation, mouse ingredient entry, keyboard table sorting, column selection and focus recovery at 200% zoom, horizontal scrolling, immediate saved selections, expandable analysis recipes and Simulator handoff, Discovery filtering, live analysis refresh, independent page sizes and expanded run boundaries, localized pagination, saved theme/language and ingredients after reload, sandbox, blocked popup, internal section links in independent windows, source-window reload isolation, shared multi-inventory edits, cookbook saving, explicit HTTPS sharing, and New Window menu.`,
+    `Electron smoke passed: ${manifest} sprites, native zoom menus and shortcuts, cooking views and preserved pot selections, search and full-pot feedback, mushroom search, keyboard recipes, grouped ingredient removal and selected-only controls, picker dismissal, tab navigation, mouse ingredient entry, keyboard table sorting, column selection and focus recovery at 200% zoom, horizontal scrolling, immediate saved selections, expandable analysis recipes and Simulator handoff, Discovery filtering, live analysis refresh, independent page sizes and expanded run boundaries, localized pagination, saved theme/language and ingredients after reload, sandbox, blocked popup, internal section links in independent windows, source-window reload isolation, shared multi-inventory edits, cookbook saving, explicit HTTPS sharing and per-window share choices, Options preferences and backdrop dismissal, and New Window menu.`,
   );
 }
 

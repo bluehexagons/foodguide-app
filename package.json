@@ -41,22 +41,19 @@
     "@electron/asar": "^4.3.1",
     "@electron/fuses": "^2.1.3",
     "@foodguide/image-size-compat": "file:tools/image-size-compat",
-    "@reforged/maker-appimage": "^5.3.1",
+    "@reforged/maker-appimage": "^6.0.0",
     "@types/debug": "^4.1.13",
     "@types/node": "^26.6.5",
-    "electron": "^44.7.0",
+    "electron": "^44.7.2",
     "es-module-lexer": "^3.0.3",
-    "oxfmt": "^0.72.0",
-    "oxlint": "^1.87.0",
+    "oxfmt": "^0.73.0",
+    "oxlint": "^1.88.0",
     "sharp": "^0.35.5",
     "typescript": "^7.0.2"
   },
   "overrides": {
     "appdmg": {
       "image-size": "file:../../tools/image-size-compat"
-    },
-    "@reforged/maker-appimage": {
-      "@electron-forge/maker-base": "8.0.1"
     }
   },
   "dependencies": {

@@ -37,7 +37,9 @@ the guide's Playwright browsers with `npx playwright install chromium firefox`
 inside `app/foodguide`. Run the Chromium suite with
 `npm --prefix app/foodguide run test:browser`, or add `-- --browser=firefox` to
 run the shared suite in Firefox. Add `--headed` to open a visible test browser
-in a graphical session. Guide CI and deployment checks require both browsers.
+in a graphical session. Guide CI runs static checks and four focused Chromium
+smoke scenarios. Full browser and accessibility audits are developer-run; run
+both browsers when reviewing guide UI or deployment changes.
 Chromium additionally covers three tests that inject trusted scrolling and
 canceled touch gestures through CDP. Firefox explicitly skips those tests and
 retains emulated touch taps, mobile layouts, keyboard flows, and accessibility scans.
@@ -123,11 +125,13 @@ edits and storage events for updates.
 
 **File → Copy Link to Current Section** (`Ctrl+Shift+C` / `Cmd+Shift+C`) converts
 the focused window's validated local URL into an HTTPS section/game link. The
-guide's **Share** dialog explicitly includes a pot or inventory snapshot. It also
-uses an HTTPS destination, never the installation path. Clipboard writes occur
-only on a user's copy action, and the dialog offers a selected text fallback.
-**My data** uses the browser's file input and download APIs for validated JSON
-backup import/export; no renderer Node access or new preload bridge is needed.
+guide's **Share** dialog lets users choose page settings, a pot or inventory
+snapshot, or a link to the repository or development site. These choices stay
+in the current window until it closes. All destinations use HTTPS, never the
+installation path. Clipboard writes occur only on a user's copy action, and the
+dialog offers a selected text fallback. **Options** contains language and theme
+settings, plus validated JSON backup import/export through the browser's file
+input and download APIs; no renderer Node access or new preload bridge is needed.
 
 ## Checks
 
@@ -151,7 +155,7 @@ exit code and report startup failures. Its 60-second deadline forcibly stops a
 hung process and fails the test; profile cleanup runs even after a timeout.
 Unit tests exercise the runner with real child processes.
 
-Before changing build tooling or the submodule, also run `npm run make` and open the resulting packaged app. The Forge `postPackage` hook reads the ASAR archive to check the compiled guide entry point, its module imports, required assets, and sprite sheets. It also rejects TypeScript declarations and other development files. Unit tests exercise complete and deliberately incomplete archives. Linux AppImage builds need `mksquashfs`.
+Before changing build tooling or the submodule, also run `npm run make` and open the resulting packaged app. The Forge `postPackage` hook reads the ASAR archive to check the compiled guide entry point, its module imports, linked stylesheets and their SVG/image assets, and sprite sheets. It also rejects TypeScript declarations and other development files. Unit tests exercise complete and deliberately incomplete archives. Linux AppImage builds need `mksquashfs`.
 
 ## Update the embedded guide
 
@@ -184,13 +188,15 @@ selects that major version for local development, and `.npmrc` enforces the
 minimum version during installation. Forge 8 uses ES modules for its tooling
 configuration.
 
-The guide uses Node.js 24 declarations. The wrapper currently needs
-`@types/node` 26 because Forge's `listr2` declarations import `InspectColor`,
-which the Node.js 24 declarations do not export. This is a build-time type
-dependency; the wrapper and build tools must continue to run on Node.js 24.
-Recheck the typing requirement when upgrading Forge or `listr2`.
+Both projects use `@types/node` 26 for build-time declarations. Forge's `listr2`
+declarations also require `InspectColor`, which Node.js 24 declarations do not
+export. The wrapper and build tools must continue to run on Node.js 24; avoid
+introducing newer runtime APIs just because the declarations accept them. Recheck
+the typing requirement when upgrading Forge or `listr2`.
 
-The `@reforged/maker-appimage` override selects Forge's 8.0.1 maker base because its published dependency range still selects Forge 7 and brings in vulnerable build dependencies. Recheck that override when upgrading either package; the AppImage build exercises its compatibility.
+`@reforged/maker-appimage` 6 supports Forge 8 directly. It resolves the same
+8.0.1 maker base as the other makers, so the earlier dependency override is no
+longer needed. Run an AppImage build when upgrading either package.
 
 The root `allowScripts` entry permits the reviewed `electron-winstaller` script to select its host architecture's 7-Zip files. When upgrading that dependency with npm versions that require script approval, inspect the changed script and refresh the pinned approval.
 
@@ -202,8 +208,8 @@ The macOS DMG toolchain still requests the old `image-size` API:
 @electron-forge/maker-dmg → electron-installer-dmg → appdmg → image-size
 ```
 
-[GHSA-w3rx-r6r6-pgpr](https://github.com/advisories/GHSA-w3rx-r6r6-pgpr) concerns an infinite loop when parsing a malformed ICNS image. The targeted `appdmg` override replaces its vulnerable parser with `tools/image-size-compat`. This adapter exports the callable `imageSize` function from the pinned [community-maintained `image-size-next@1.2.2`](https://github.com/lcf2212dev/image-size-next/blob/main/SECURITY.md), preserving file paths and callbacks. The original patched 2.x API would require changes to `appdmg`.
+[GHSA-w3rx-r6r6-pgpr](https://github.com/advisories/GHSA-w3rx-r6r6-pgpr) concerns an infinite loop when parsing a malformed ICNS image. The targeted `appdmg` override replaces its vulnerable parser with `tools/image-size-compat`. The adapter uses the pinned [community-maintained `image-size-next@2.1.1`](https://github.com/lcf2212dev/image-size-next/blob/main/SECURITY.md) buffer parser and implements the file-path and callback API that `appdmg` expects, using Node.js file reads.
 
-The override's `../../tools/image-size-compat` path is relative to `node_modules/appdmg`. Keep the adapter installed as a direct development dependency so its compatibility tests also run on Windows and Linux, where `appdmg` is optional and skipped. Tests cover buffers, synchronous file reads, background callbacks, missing-file errors, and malformed ICNS input in a child process with a timeout. The macOS CI job also verifies that the installed `appdmg` resolves this adapter and builds an actual DMG.
+The override's `../../tools/image-size-compat` path is relative to `node_modules/appdmg`. Keep the adapter installed as a direct development dependency so its compatibility tests also run on Windows and Linux, where `appdmg` is optional and skipped. Tests cover buffers, synchronous file reads, background callbacks, missing-file and parser errors, and malformed ICNS input in a child process with a timeout. The macOS CI job also verifies that the installed `appdmg` resolves this adapter and builds an actual DMG.
 
-Both full and production dependency audits are clean as of October 10, 2026. The parser and adapter are development dependencies excluded from the app archive. Recheck the fork and override when the DMG toolchain updates; remove the adapter once upstream provides a compatible patched parser.
+Both full and production dependency audits are clean as of October 15, 2026. The parser and adapter are development dependencies excluded from the app archive. Recheck the fork and override when the DMG toolchain updates; remove the adapter once upstream provides a compatible patched parser.

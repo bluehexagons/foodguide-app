@@ -13,10 +13,13 @@ const fixtureFiles = {
   'app/foodguide/html/index.htm': '',
   'app/foodguide/html/index.html': '',
   'app/foodguide/html/icon.png': '',
-  'app/foodguide/html/style/main.css': '',
+  'app/foodguide/html/style/main.css': `@import url('header.css'); @import url('dialogs.css');`,
+  'app/foodguide/html/style/header.css': `body { mask: url('../img/foodguide.svg'); }`,
+  'app/foodguide/html/style/dialogs.css': '',
+  'app/foodguide/html/img/foodguide.svg': '<svg/>',
   'app/foodguide/html/style/accessibility.css': '',
   'app/foodguide/html/foodguide.js': "export * from './food.js'; import './locales/index.js';",
-  'app/foodguide/html/legacy-browser-warning.js': '',
+  'app/foodguide/html/entry-redirect.js': '',
   'app/foodguide/html/food.js': `import './collection.js'; import './preferences.js';
 const example = "import './example-only.js'";`,
   'app/foodguide/html/collection.js': "import './food.js';", // Module cycles are valid.
@@ -90,5 +93,13 @@ for (const filename of ['food.d.ts', 'food.ts', 'food.js.map']) {
     const { verifyPackage } = await import('../dist/scripts/verify-package.mjs');
     const output = await createArchive(t, { extra: { [`app/foodguide/html/${filename}`]: '' } });
     assert.throws(() => verifyPackage(output, 'linux'), /leaked into the packaged app/);
+  });
+}
+
+for (const filename of ['style/dialogs.css', 'img/foodguide.svg']) {
+  test(`package verification rejects a missing style asset ${filename}`, async t => {
+    const { verifyPackage } = await import('../dist/scripts/verify-package.mjs');
+    const output = await createArchive(t, { omit: `app/foodguide/html/${filename}` });
+    assert.throws(() => verifyPackage(output, 'linux'), /Missing packaged asset/);
   });
 }

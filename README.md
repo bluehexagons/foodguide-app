@@ -41,10 +41,13 @@ The # links beside food and recipe names link to a highlighted entry.
 
 **File → Copy Link to Current Section** (`Ctrl+Shift+C` / `Cmd+Shift+C`) copies a
 web link to the section and game. Use the guide's **Share** button to include a pot
-or inventory snapshot; it creates an HTTPS link without your installation path.
+or inventory snapshot, choose which page settings to include, or link to the
+GitHub repository or development site. Sharing choices stay in the current
+window until it closes; links never include your installation path.
 Shared inventory links create new named copies. **My cookbook** saves combinations
-with their game settings. **My data** imports/exports inventories and dishes as JSON
-backups, including transfers between the app and web guide.
+with their game settings. **Options** provides language and theme settings alongside JSON backup
+import/export for inventories and dishes, including transfers between the app
+and web guide. Language and theme controls also remain in the main header.
 
 ## Validate changes
 
@@ -77,7 +80,7 @@ The unpacked app goes in `out/foodguide-app-<platform>-<arch>/`; installers go i
 
 On Debian/Ubuntu, install Linux build tools with `sudo apt-get install squashfs-tools dpkg`. For other distributions, install their equivalent packages. To target a different architecture, pass Forge's `--arch` option, for example `npm run make -- --arch=arm64`. A normal build produces one architecture rather than a universal macOS app.
 
-GitHub Actions validates and builds Windows, Linux, and macOS on pushes to `main` and `feature/typescript-migration`, pull requests, and manual runs. CI artifacts expire after three days. Version tags publish Windows and Linux release artifacts and SHA256 checksums; see [release instructions](docs/releases.md).
+GitHub Actions validates and builds Windows, Linux, and macOS on pushes to `main`, pull requests, and manual runs. CI artifacts expire after three days. Version tags publish Windows and Linux release artifacts and SHA256 checksums; see [release instructions](docs/releases.md).
 
 ## License and credits
 
