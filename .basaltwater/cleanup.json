@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "instructions": "Read README.md and docs/artifacts.md. Retain the native Electron Forge and embedded-guide workflows. Stop development, compilation, packaging and smoke jobs first. These rules do not authorize deletion.",
+  "preserve": ["app/foodguide", "src", "tests", "artifacts/archive"],
+  "rules": [
+    {
+      "name": "compiled-output",
+      "strategy": "generated",
+      "paths": ["dist", ".generated"],
+      "instructions": "Wrapper compilation and asset generation reproduce these directories during npm start/package/make. Confirm no active app, package or review needs them. Preview with the shared clean-generated helper; apply needs authorized project-root writes for isolation. Keep embedded guide source and assets intact."
+    },
+    {
+      "name": "packages-and-smoke-evidence",
+      "strategy": "agent",
+      "paths": ["out"],
+      "archive": "artifacts/archive",
+      "instructions": "Separate rebuildable Forge packages from retained releases and out/test-results/electron-smoke.png or other review captures. Preserve useful verification evidence with known revision, caption and checksum before proposing exact removals. Use bounded Luna high/standard classification when useful. Never remove the entire out root based on age or an ignore rule."
+    }
+  ]
+}

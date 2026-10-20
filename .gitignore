@@ -2,3 +2,6 @@
 /out/
 /.generated/
 /dist/
+/artifacts/
+/.basaltwater/*
+!/.basaltwater/cleanup.json

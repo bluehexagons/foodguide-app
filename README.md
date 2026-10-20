@@ -18,6 +18,11 @@ Download Windows and Linux builds from [Releases](https://github.com/bluehexagon
 
 ## Run from source
 
+Basaltwater on Debian is the reference development environment. Its
+[shared standards and skills](https://github.com/bluehexagons/basaltwater/blob/main/docs/agents/project-standards.md)
+provide environment support; the native commands below also work with manually
+installed prerequisites on the documented platforms.
+
 Use Node.js 24 or newer and Git. CI uses Node.js 24; `nvm use` selects that major version from `.nvmrc`. Dependency installation rejects older Node versions. The app and embedded guide each have their own dependencies, so install both:
 
 ```sh
@@ -60,6 +65,8 @@ npm run test:electron
 `check` runs wrapper and guide unit tests, oxlint, oxfmt checks, and strict TypeScript checks for the wrapper, Forge configuration, and guide. `audit` checks both dependency sets. `test:electron` opens the real app with a temporary profile, checks sprites, keyboard and mouse ingredient entry, keyboard table sorting and focus, saved preferences, and sandbox settings, then closes it. These commands require the two dependency installs above. The Electron test also needs a graphical session; Linux CI uses `xvfb-run -a npm run test:electron`.
 
 See [development and dependency maintenance](docs/development.md) for the repository layout, submodule updates, and packaging dependency overrides.
+See [artifact retention](docs/artifacts.md) before clearing generated output,
+packaged apps or smoke-test captures.
 
 ## Package the app
 
