@@ -44,7 +44,7 @@
     "@reforged/maker-appimage": "^6.0.0",
     "@types/debug": "^4.1.13",
     "@types/node": "^26.6.5",
-    "electron": "^44.7.2",
+    "electron": "^44.9.0",
     "es-module-lexer": "^3.0.3",
     "oxfmt": "^0.73.0",
     "oxlint": "^1.88.0",
