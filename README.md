@@ -23,7 +23,7 @@ Basaltwater on Debian is the reference development environment. Its
 provide environment support; the native commands below also work with manually
 installed prerequisites on the documented platforms.
 
-Use Node.js 24 or newer and Git. CI uses Node.js 24; `nvm use` selects that major version from `.nvmrc`. Dependency installation rejects older Node versions. The app and embedded guide each have their own dependencies, so install both:
+Use Node.js 24.22.1+ within 24.x (LTS) or 26.12.1+ within 26.x (Current) and Git. CI uses Node.js 24; `nvm use` selects Node 24.22.1 from `.nvmrc`. Dependency installation rejects older Node versions. The app and embedded guide each have their own dependencies, so install both:
 
 ```sh
 git clone --recurse-submodules https://github.com/bluehexagons/foodguide-app.git

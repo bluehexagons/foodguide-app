@@ -183,9 +183,9 @@ fails the command. Both CI workflows run it before building distributables.
 Use `npm outdated` at the root and repeat it with `--prefix app/foodguide` for
 the guide. Upgrade guide dependencies in the guide repository.
 
-Both repositories require Node.js 24 or newer. CI uses Node.js 24, `.nvmrc`
-selects that major version for local development, and `.npmrc` enforces the
-minimum version during installation. Forge 8 uses ES modules for its tooling
+Both repositories require Node.js 24.22.1+ within 24.x (LTS) or 26.12.1+ within
+26.x (Current). CI uses Node.js 24, `.nvmrc` selects 24.22.1 for local development,
+and `.npmrc` enforces the supported range during installation. Forge 8 uses ES modules for its tooling
 configuration.
 
 Both projects use `@types/node` 26 for build-time declarations. Forge's `listr2`

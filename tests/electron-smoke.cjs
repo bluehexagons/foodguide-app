@@ -378,13 +378,14 @@ async function main() {
   assert.equal(
     await win.webContents.executeJavaScript(`(() => {
       return document.querySelectorAll('#simulator [role=option]').length === 1 &&
-        document.querySelector('#simulator .ingredient-search-summary').textContent.includes('1 hidden by cooking view.');
+        document.querySelector('#simulator .ingredient-search-summary').textContent.includes('2 hidden by cooking view.');
     })()`),
     true,
     'Partially filtered native searches must disclose hidden matches',
   );
   await clickElement(win, '#simulator .ingredient-show-all');
-  await waitFor(win, "document.querySelectorAll('#simulator [role=option]').length === 2");
+  // Prefab ID moonbutterflywings also matches Butter alongside Butterfly Wings.
+  await waitFor(win, "document.querySelectorAll('#simulator [role=option]').length === 3");
   assert.equal(
     await win.webContents.executeJavaScript(
       "JSON.parse(localStorage.getItem('foodGuideCookingPreference'))[0]",
