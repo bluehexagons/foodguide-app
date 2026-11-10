@@ -54,7 +54,9 @@
   "overrides": {
     "appdmg": {
       "image-size": "file:../../tools/image-size-compat"
-    }
+    },
+    "glob@^13.0.2": "14.0.4",
+    "minimatch@^10.0.1": "11.0.5"
   },
   "dependencies": {
     "electron-squirrel-startup": "^1.0.1"

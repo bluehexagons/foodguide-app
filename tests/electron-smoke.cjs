@@ -1152,7 +1152,7 @@ async function main() {
   win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Space' });
   await waitFor(
     win,
-    "document.querySelectorAll('#makable tbody tr[data-recipe]').length > 0 && document.querySelector('#makable .table-group-pagination .table-page-count').textContent.startsWith('Page 1 of')",
+    `document.querySelectorAll('#makable tbody tr[data-recipe]').length > 0 && document.querySelector('#makable .table-group-pagination .table-page-count').textContent.startsWith('Page 1 of') && Number(document.querySelector('#makable .analysis-result-count').textContent.match(/; ([\\d,]+) matching combinations\\./)?.[1]?.replace(/\\D/g, '')) === ${resultTotal}`,
   );
   assert.equal(
     await win.webContents.executeJavaScript(

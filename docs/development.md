@@ -212,4 +212,9 @@ The macOS DMG toolchain still requests the old `image-size` API:
 
 The override's `../../tools/image-size-compat` path is relative to `node_modules/appdmg`. Keep the adapter installed as a direct development dependency so its compatibility tests also run on Windows and Linux, where `appdmg` is optional and skipped. Tests cover buffers, synchronous file reads, background callbacks, missing-file and parser errors, and malformed ICNS input in a child process with a timeout. The macOS CI job also verifies that the installed `appdmg` resolves this adapter and builds an actual DMG.
 
-Both full and production dependency audits are clean as of October 15, 2026. The parser and adapter are development dependencies excluded from the app archive. Recheck the fork and override when the DMG toolchain updates; remove the adapter once upstream provides a compatible patched parser.
+The parser and adapter are development dependencies excluded from the app archive. Recheck the fork and override when the DMG toolchain updates; remove the adapter once upstream provides a compatible patched parser.
+
+The `glob` and `minimatch` overrides select patched versions for the ranges used
+by `@electron/asar` 4. These are major updates beyond its declared ranges, so
+validate packaging and the platform builds when changing them. Remove the
+workaround when the archive tool accepts patched versions upstream.
