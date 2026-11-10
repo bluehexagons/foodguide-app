@@ -10,9 +10,9 @@ published by the Release workflow.
 
 ## Versioning
 
-Keep the app's major.minor.patch aligned with the embedded guide release. For an
-app-only fix, use a SemVer suffix such as `1.2.7-app.1` and increment it for
-subsequent app-only fixes. The guide's About tab displays the guide version and
+Keep the app's major.minor.patch aligned with the embedded guide release. The
+first app build uses a SemVer suffix such as `1.2.7-app.0`; increment it for
+app-only fixes, for example `1.2.7-app.1`. The guide's About tab displays the guide version and
 commit included in the build. Tag the app release commit with `v` followed by
 the app package version.
 
