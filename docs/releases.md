@@ -8,6 +8,14 @@ a GitHub release with generated notes and `SHA256SUMS.txt`. macOS DMGs are avail
 as Build workflow artifacts and through local builds on a Mac. They are not
 published by the Release workflow.
 
+## Versioning
+
+Keep the app's major.minor.patch aligned with the embedded guide release. For an
+app-only fix, use a SemVer suffix such as `1.2.7-app.1` and increment it for
+subsequent app-only fixes. The guide's About tab displays the guide version and
+commit included in the build. Tag the app release commit with `v` followed by
+the app package version.
+
 ## Publish a version
 
 1. Update `package.json` and `package-lock.json` together, for example with `npm version 1.2.6 --no-git-tag-version`.

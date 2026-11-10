@@ -1,6 +1,6 @@
 {
   "name": "foodguide-app",
-  "version": "1.2.5",
+  "version": "1.2.7",
   "description": "Desktop app version of the unofficial Food Guide",
   "main": "dist/index.cjs",
   "scripts": {
@@ -43,11 +43,11 @@
     "@foodguide/image-size-compat": "file:tools/image-size-compat",
     "@reforged/maker-appimage": "^6.0.0",
     "@types/debug": "^4.1.13",
-    "@types/node": "^26.6.5",
-    "electron": "^45.0.0",
+    "@types/node": "^26.6.6",
+    "electron": "^45.2.3",
     "es-module-lexer": "^3.0.4",
-    "oxfmt": "^0.74.0",
-    "oxlint": "^1.89.0",
+    "oxfmt": "^0.78.0",
+    "oxlint": "^1.93.0",
     "sharp": "^0.35.5",
     "typescript": "^7.0.2"
   },
