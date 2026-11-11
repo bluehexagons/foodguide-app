@@ -13,6 +13,8 @@ export function verifyPackage(outputPath: string, platform: string) {
   const files = listPackage(archive, { isPack: false }).map(file => file.replaceAll('\\', '/'));
   for (const file of [
     '/dist/index.cjs',
+    '/dist/build-info.json',
+    '/app/foodguide/html/version.js',
     '/dist/lib/navigation.cjs',
     '/LICENSE',
     '/app/foodguide/LICENSE',
@@ -60,6 +62,7 @@ export function verifyPackage(outputPath: string, platform: string) {
       }
     }
   };
+  verifyModule('/app/foodguide/html/version.js');
   verifyModule('/app/foodguide/html/foodguide.js');
   verifyModule('/app/foodguide/html/entry-redirect.js');
 

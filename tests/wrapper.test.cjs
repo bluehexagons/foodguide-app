@@ -19,6 +19,7 @@ async function startWrapper({
 } = {}) {
   const calls = { windows: [], external: [], clipboard: [], quit: 0, ready: 0, exit: [] };
   const app = Object.assign(new EventEmitter(), {
+    getVersion: () => '1.2.7-app.0',
     quit: () => calls.quit++,
     exit: code => calls.exit.push(code),
     requestSingleInstanceLock: () => singleInstance,
@@ -36,6 +37,7 @@ async function startWrapper({
       this.webContents.setWindowOpenHandler = handler => {
         this.openHandler = handler;
       };
+      this.webContents.executeJavaScript = () => Promise.resolve();
       this.zoomLimits = [];
       this.webContents.setVisualZoomLevelLimits = (min, max) => {
         this.zoomLimits.push([min, max]);

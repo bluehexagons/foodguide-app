@@ -109,6 +109,20 @@ async function main() {
   });
   await once(win.webContents, 'did-finish-load');
   await waitFor(win, "document.querySelectorAll('#navbar [role=tab]').length === 7");
+  await waitFor(
+    win,
+    "document.querySelector('#desktop-build-version')?.textContent.startsWith('Desktop ')",
+  );
+  assert.match(
+    await win.webContents.executeJavaScript("document.querySelector('#build-version').textContent"),
+    /^Food Guide \d+\.\d+\.\d+ \((?:[a-f0-9]{40}|unknown)\)$/,
+  );
+  assert.match(
+    await win.webContents.executeJavaScript(
+      "document.querySelector('#desktop-build-version').textContent",
+    ),
+    /^Desktop .+ \((?:[a-f0-9]{40}|unknown)\)$/,
+  );
   assert.equal(win.webContents.getLastWebPreferences().sandbox, true);
   assert.equal(win.webContents.getLastWebPreferences().contextIsolation, true);
   assert.equal(win.webContents.getLastWebPreferences().nodeIntegration, false);
@@ -1448,6 +1462,20 @@ async function main() {
   win.webContents.reload();
   await sourceReloaded;
   await waitFor(win, "document.querySelectorAll('#navbar [role=tab]').length === 7");
+  await waitFor(
+    win,
+    "document.querySelector('#desktop-build-version')?.textContent.startsWith('Desktop ')",
+  );
+  assert.match(
+    await win.webContents.executeJavaScript("document.querySelector('#build-version').textContent"),
+    /^Food Guide \d+\.\d+\.\d+ \((?:[a-f0-9]{40}|unknown)\)$/,
+  );
+  assert.match(
+    await win.webContents.executeJavaScript(
+      "document.querySelector('#desktop-build-version').textContent",
+    ),
+    /^Desktop .+ \((?:[a-f0-9]{40}|unknown)\)$/,
+  );
   assert.deepEqual(
     await win.webContents.executeJavaScript(
       "Array.from(document.querySelectorAll('#ingredients [data-id]'), slot => slot.dataset.id)",

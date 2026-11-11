@@ -1,6 +1,6 @@
 {
   "name": "foodguide-app",
-  "version": "1.2.7-app.0",
+  "version": "1.2.7-app.1",
   "description": "Desktop app version of the unofficial Food Guide",
   "main": "dist/index.cjs",
   "scripts": {
@@ -17,7 +17,7 @@
     "test:app": "npm run build:app && node --test tests/*.test.cjs",
     "test:electron": "npm run generate-assets && node dist/scripts/test-electron.mjs",
     "generate-assets": "npm run build && node dist/scripts/generate-assets.mjs",
-    "build:app": "npm run build:guide && tsc",
+    "build:app": "npm run build:guide && tsc && node dist/scripts/write-build-info.mjs",
     "build:guide": "npm --prefix app/foodguide run build",
     "build": "npm run build:app",
     "lint:fix": "oxlint --disable-nested-config --fix --deny-warnings && npm --prefix app/foodguide run lint:fix",

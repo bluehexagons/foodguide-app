@@ -6,6 +6,8 @@ const { test } = require('node:test');
 
 const fixtureFiles = {
   'dist/index.cjs': '',
+  'dist/build-info.json': '{"commit":"unknown"}',
+  'app/foodguide/html/version.js': '',
   'dist/lib/navigation.cjs': '',
   LICENSE: '',
   'node_modules/electron-squirrel-startup/index.js': '',
@@ -70,6 +72,14 @@ for (const filename of ['foodguide.js', 'collection.js', 'locales/es.js']) {
     const { verifyPackage } = await import('../dist/scripts/verify-package.mjs');
     const output = await createArchive(t, { omit: `app/foodguide/html/${filename}` });
     assert.throws(() => verifyPackage(output, 'linux'), /Missing packaged module/);
+  });
+}
+
+for (const filename of ['dist/build-info.json', 'app/foodguide/html/version.js']) {
+  test(`package verification rejects missing ${filename}`, async t => {
+    const { verifyPackage } = await import('../dist/scripts/verify-package.mjs');
+    const output = await createArchive(t, { omit: filename });
+    assert.throws(() => verifyPackage(output, 'linux'), /Missing packaged file/);
   });
 }
 

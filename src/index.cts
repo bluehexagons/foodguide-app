@@ -1,6 +1,7 @@
 import electron = require('electron');
 import path = require('node:path');
 import url = require('node:url');
+import fs = require('node:fs');
 import navigation = require('./lib/navigation.cjs');
 import installerStartup = require('electron-squirrel-startup');
 
@@ -11,6 +12,10 @@ const root = path.resolve(__dirname, '..');
 
 const guidePath = path.join(root, 'app/foodguide/html/index.html');
 const guideUrl = pathToFileURL(guidePath).href;
+const buildInfo = JSON.parse(fs.readFileSync(path.join(__dirname, 'build-info.json'), 'utf8')) as {
+  commit: string;
+};
+const desktopVersion = `Desktop ${app.getVersion()} (${buildInfo.commit})`;
 
 const openExternalUrl = (url: string) => {
   if (isExternalUrl(url)) {
@@ -34,6 +39,11 @@ const createWindow = (initialUrl = guideUrl) => {
   });
 
   win.webContents.on('did-finish-load', () => {
+    void win.webContents
+      .executeJavaScript(
+        `(() => { const element = document.createElement('p'); element.className = 'info-footnote'; element.id = 'desktop-build-version'; element.textContent = ${JSON.stringify(desktopVersion)}; document.getElementById('build-version')?.after(element); })()`,
+      )
+      .catch(error => console.error('Unable to display the desktop version:', error));
     void win.webContents.setVisualZoomLevelLimits(1, 5).catch(error => {
       console.error('Unable to enable pinch zoom:', error);
     });

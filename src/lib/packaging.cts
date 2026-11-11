@@ -2,6 +2,7 @@
 // Keep the compiled runtime, production dependencies, guide assets, and licenses.
 const runtimeFiles = new Set([
   '/dist/index.cjs',
+  '/dist/build-info.json',
   '/dist/lib/navigation.cjs',
   '/package.json',
   '/LICENSE',

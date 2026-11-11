@@ -12,8 +12,9 @@ published by the Release workflow.
 
 Keep the app's major.minor.patch aligned with the embedded guide release. The
 first app build uses a SemVer suffix such as `1.2.7-app.0`; increment it for
-app-only fixes, for example `1.2.7-app.1`. The guide's About tab displays the guide version and
-commit included in the build. Tag the app release commit with `v` followed by
+app-only fixes, for example `1.2.7-app.1`. The guide's About tab displays both the desktop version and commit and the
+embedded guide version and commit. Source archives without Git metadata show
+`unknown` for the corresponding commit. Tag the app release commit with `v` followed by
 the app package version.
 
 ## Publish a version
