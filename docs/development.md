@@ -183,8 +183,8 @@ fails the command. Both CI workflows run it before building distributables.
 Use `npm outdated` at the root and repeat it with `--prefix app/foodguide` for
 the guide. Upgrade guide dependencies in the guide repository.
 
-Both repositories require Node.js 24.22.1+ within 24.x (LTS) or 26.12.1+ within
-26.x (Current). CI uses Node.js 24, `.nvmrc` selects 24.22.1 for local development,
+Both repositories require Node.js 24.22.3+ within 24.x (LTS) or 26.13.1+ within
+26.x (LTS). CI uses Node.js 24, `.nvmrc` selects 24.22.3 for local development,
 and `.npmrc` enforces the supported range during installation. Forge 8 uses ES modules for its tooling
 configuration.
 
@@ -214,7 +214,6 @@ The override's `../../tools/image-size-compat` path is relative to `node_modules
 
 The parser and adapter are development dependencies excluded from the app archive. Recheck the fork and override when the DMG toolchain updates; remove the adapter once upstream provides a compatible patched parser.
 
-The `glob` and `minimatch` overrides select patched versions for the ranges used
-by `@electron/asar` 4. These are major updates beyond its declared ranges, so
-validate packaging and the platform builds when changing them. Remove the
-workaround when the archive tool accepts patched versions upstream.
+`@electron/asar` 4.3.2 accepts patched `glob` and `minimatch` versions directly,
+so their former overrides are no longer needed. Keep packaging and platform
+builds in dependency-update validation.
