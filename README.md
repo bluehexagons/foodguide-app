@@ -42,7 +42,14 @@ The app starts with one window. Launching it again focuses the running app.
 **File → New Window** (`Ctrl+N` / `Cmd+N`) and modified section-link clicks are
 available for optional comparisons. **File → Close** (**Close Window** on macOS)
 closes the current window (`Ctrl+W` / `Cmd+W`). **View → Reload** (`Ctrl+R` / `Cmd+R`)
-reloads its guide.
+reloads its guide. The first guide window restores the last saved size, position,
+maximized state, and zoom. **View → Reset Window Layout** centers the current
+guide window and restores its default size and zoom.
+
+**View → Open Companion Window** starts a narrow, always-on-top guide with a
+copy of the current pot and game settings. Open the command again to focus the
+companion. Changes to its pot stay in that window.
+
 Pot choices and picker views are independent;
 named inventories, cookbook dishes, theme, and language synchronize across windows.
 The # links beside food and recipe names link to a highlighted entry.
@@ -52,10 +59,17 @@ web link to the section and game. Use the guide's **Share** button to include a 
 or inventory snapshot, choose which page settings to include, or link to the
 GitHub repository or development site. Sharing choices stay in the current
 window until it closes; links never include your installation path.
+**File → Open Food Guide Link from Clipboard** (`Ctrl+O` / `Cmd+O`) opens a
+copied production or development guide link in a new window, using the offline
+bundle. The command reads the clipboard when invoked.
 Shared inventory links create new named copies. **My cookbook** saves combinations
 with their game settings. **Options** provides language and theme settings alongside JSON backup
 import/export for inventories and dishes, including transfers between the app
 and web guide. Language and theme controls also remain in the main header.
+
+**Help → Check for Updates…** looks up the latest published desktop release.
+Choose a compatible download or open the release notes. You can close the dialog
+and keep using the guide, including when offline.
 
 ## Validate changes
 

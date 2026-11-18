@@ -10,6 +10,8 @@ const fixtureFiles = {
   'dist/build-info.json': '{"commit":"unknown"}',
   'app/foodguide/html/version.js': '',
   'dist/lib/navigation.cjs': '',
+  'dist/lib/updates.cjs': '',
+  'dist/lib/window-layout.cjs': '',
   LICENSE: '',
   'node_modules/electron-squirrel-startup/index.js': '',
   'app/foodguide/LICENSE': '',

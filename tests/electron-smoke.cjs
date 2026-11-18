@@ -1,9 +1,9 @@
 const assert = require('node:assert/strict');
 const { once } = require('node:events');
-const { mkdir, writeFile } = require('node:fs/promises');
+const { mkdir, readFile, writeFile } = require('node:fs/promises');
 const path = require('node:path');
 const { setTimeout: delay } = require('node:timers/promises');
-const { app, BrowserWindow, Menu } = require('electron');
+const { app, BrowserWindow, Menu, clipboard, screen } = require('electron');
 const { commit } = require('../dist/build-info.json');
 
 const desktopBuildLabel = `Desktop ${app.getVersion()} (${commit})`;
@@ -101,6 +101,17 @@ async function selectPageSize(win, action, value) {
     win,
     `[...document.querySelectorAll('#makable .table-group-pagination')].every(bar => bar.querySelector(${JSON.stringify(selector)})?.value === ${selectedValue}) && document.activeElement.matches(${JSON.stringify(selector)})`,
   );
+}
+
+async function captureWindow(win, filename) {
+  // Give Chromium a frame to present the window before grabbing its surface.
+  win.focus();
+  win.webContents.focus();
+  await win.webContents.executeJavaScript(
+    'new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true))))',
+  );
+  const capture = await win.webContents.capturePage();
+  await writeFile(filename, capture.toPNG());
 }
 
 async function main() {
@@ -1520,16 +1531,78 @@ async function main() {
 
   const output = path.join(__dirname, '../out/test-results');
   await mkdir(output, { recursive: true });
-  // Give Chromium a frame to present the original window after closing the one above it.
-  win.focus();
-  win.webContents.focus();
-  await win.webContents.executeJavaScript(
-    'new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true))))',
+  await captureWindow(win, path.join(output, 'electron-smoke.png'));
+
+  await clipboard.writeText(
+    'https://foodguide.bluehexagons.com/#simulator?game=together&ingredients=carrot%40together',
   );
-  const capture = await win.webContents.capturePage();
-  await writeFile(path.join(output, 'electron-smoke.png'), capture.toPNG());
+  const linkCreated = once(app, 'browser-window-created', { signal: AbortSignal.timeout(10_000) });
+  menu.getMenuItemById('open-guide-link').click(undefined, win, win.webContents);
+  const [, linkWindow] = await linkCreated;
+  await waitFor(
+    linkWindow,
+    "document.querySelectorAll('#ingredients [data-id]').length === 1 && !!document.querySelector('#ingredients [data-id=\"carrot@together\"]')",
+  );
+  assert.match(linkWindow.webContents.getURL(), /^file:/);
+  linkWindow.destroy();
+
+  const companionCreated = once(app, 'browser-window-created', {
+    signal: AbortSignal.timeout(10_000),
+  });
+  const openCompanion = menu.getMenuItemById('companion-window');
+  openCompanion.click(undefined, win, win.webContents);
+  const [, companion] = await companionCreated;
+  await waitFor(
+    companion,
+    `
+    document.querySelector('#tab-simulator')?.getAttribute('aria-selected') === 'true' &&
+    getComputedStyle(document.querySelector('#simulator .instructions > span')).display === 'none' &&
+    document.querySelector('#simulator .selectionpanel').getBoundingClientRect().bottom <= innerHeight &&
+    document.querySelector('#simulator .ingredientpicker').getBoundingClientRect().bottom <= innerHeight
+  `,
+  );
+  assert(companion.isAlwaysOnTop());
+  assert(companion.getBounds().width <= 450);
+  assert.deepEqual(
+    await companion.webContents.executeJavaScript(
+      "Array.from(document.querySelectorAll('#ingredients [data-id]'), slot => slot.dataset.id)",
+    ),
+    sourcePot,
+  );
+  openCompanion.click(undefined, companion, companion.webContents);
+  assert.equal(BrowserWindow.getAllWindows().length, 2);
+  await captureWindow(companion, path.join(output, 'electron-companion.png'));
+
+  win.setSize(690, 560);
+  win.webContents.setZoomFactor(1.25);
+  const savedBounds = win.getNormalBounds();
+  const closed = once(win, 'closed', { signal: AbortSignal.timeout(10_000) });
+  win.close();
+  await closed;
+  const layoutFile = path.join(app.getPath('userData'), 'window-layout.json');
+  const layout = JSON.parse(await readFile(layoutFile, 'utf8'));
+  assert.deepEqual(layout, { bounds: savedBounds, maximized: false, zoomFactor: 1.25 });
+  const restored = once(app, 'browser-window-created', { signal: AbortSignal.timeout(10_000) });
+  menu.getMenuItemById('new-window').click(undefined, companion, companion.webContents);
+  const [, restoredWindow] = await restored;
+  await waitFor(restoredWindow, "document.querySelector('#desktop-build-version') !== null");
+  assert.deepEqual(restoredWindow.getSize(), [savedBounds.width, savedBounds.height]);
+  assert.equal(restoredWindow.webContents.getZoomFactor(), 1.25);
+  menu
+    .getMenuItemById('reset-window-layout')
+    .click(undefined, restoredWindow, restoredWindow.webContents);
+  const area = screen.getDisplayMatching(restoredWindow.getBounds()).workArea;
+  assert.deepEqual(restoredWindow.getSize(), [
+    Math.min(area.width, 1000),
+    Math.min(area.height, 600),
+  ]);
+  assert.equal(restoredWindow.webContents.getZoomFactor(), 1);
+  companion.destroy();
   console.log(
     `Electron smoke passed: ${manifest} sprites, native zoom menus and shortcuts, cooking views and preserved pot selections, search and full-pot feedback, mushroom search, keyboard recipes, grouped ingredient removal and selected-only controls, picker dismissal, tab navigation, mouse ingredient entry, keyboard table sorting, column selection and focus recovery at 200% zoom, horizontal scrolling, immediate saved selections, expandable analysis recipes and Simulator handoff, Discovery filtering, live analysis refresh, independent page sizes and expanded run boundaries, localized pagination, saved theme/language and ingredients after reload, sandbox, blocked popup, internal section links in independent windows, source-window reload isolation, shared multi-inventory edits, cookbook saving, explicit HTTPS sharing and per-window share choices, Options preferences and backdrop dismissal, and New Window, Reload, and Close menus.`,
+  );
+  console.log(
+    'Desktop smoke passed: opening a shared link from the clipboard, a pinned companion with the current pot, and window size and zoom restoration and reset.',
   );
 }
 

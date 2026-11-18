@@ -45,3 +45,18 @@ GitHub's automatic source ZIP and tarball do not contain the guide submodule. Us
 AppImages need a compatible Linux userspace. If FUSE is unavailable, the AppImage runtime supports `--appimage-extract-and-run` to run from a temporary extraction. Debian packages declare their required system libraries.
 
 The current workflow does not configure code-signing certificates or macOS notarization.
+
+## In-app update checks
+
+**Help → Check for Updates…** makes an on-demand request to the public GitHub
+latest-release endpoint and compares the published version with the installed
+desktop version. For a newer release it links to the Windows installer or
+portable ZIP, or to the Linux AppImage or Debian package for the current
+architecture, when attached. The release notes are available from the same dialog.
+The Windows installer filename has no architecture suffix, so its availability
+is checked against the matching portable ZIP.
+
+The current app hands off downloads to the user's browser. A future managed
+updater can use Squirrel on Windows once an installed upgrade has been verified
+end to end. macOS automatic updates require signed builds, and Linux needs a
+distribution-compatible update path. [Electron updater documentation](https://www.electronjs.org/docs/latest/api/auto-updater#platform-notices)

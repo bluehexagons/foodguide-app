@@ -6,7 +6,12 @@ const path = require('node:path');
 const { test } = require('node:test');
 const { pathToFileURL } = require('node:url');
 const vm = require('node:vm');
-const { isExternalUrl, isGuideUrl, shareGuideUrl } = require('../dist/lib/navigation.cjs');
+const {
+  bundledGuideLink,
+  isExternalUrl,
+  isGuideUrl,
+  shareGuideUrl,
+} = require('../dist/lib/navigation.cjs');
 const { ignoreFile } = require('../dist/lib/packaging.cjs');
 
 const root = path.resolve(__dirname, '..');
@@ -18,10 +23,26 @@ async function startWrapper({
   load = async () => {},
   projectRoot = root,
   singleInstance = true,
+  clipboardText = '',
+  fetch = async () => {
+    throw new Error('offline');
+  },
 } = {}) {
-  const calls = { windows: [], external: [], clipboard: [], quit: 0, ready: 0, exit: [] };
+  const calls = {
+    windows: [],
+    external: [],
+    clipboard: [],
+    messages: [],
+    quit: 0,
+    ready: 0,
+    exit: [],
+  };
   const app = Object.assign(new EventEmitter(), {
     getVersion: () => '1.2.7-app.0',
+    getPath: () => path.join(root, 'dist', 'wrapper-test-profile'),
+    setAppUserModelId: id => {
+      calls.appId = id;
+    },
     quit: () => calls.quit++,
     exit: code => calls.exit.push(code),
     requestSingleInstanceLock: () => singleInstance,
@@ -40,6 +61,8 @@ async function startWrapper({
         this.openHandler = handler;
       };
       this.webContents.executeJavaScript = () => Promise.resolve();
+      this.webContents.getURL = () => this.url;
+      this.webContents.insertCSS = () => Promise.resolve();
       this.zoomLimits = [];
       this.webContents.setVisualZoomLevelLimits = (min, max) => {
         this.zoomLimits.push([min, max]);
@@ -66,6 +89,9 @@ async function startWrapper({
     show() {
       this.visible = true;
     }
+    isVisible() {
+      return this.visible === true;
+    }
     loadURL(url) {
       this.url = url;
       return load(this);
@@ -75,6 +101,7 @@ async function startWrapper({
     }
     destroy() {
       calls.windows.splice(calls.windows.indexOf(this), 1);
+      this.emit('closed');
     }
   }
   const electron = {
@@ -86,7 +113,18 @@ async function startWrapper({
         calls.menu = menu;
       },
     },
-    clipboard: { writeText: text => calls.clipboard.push(text) },
+    clipboard: {
+      readText: async () => clipboardText,
+      writeText: async text => calls.clipboard.push(text),
+    },
+    dialog: {
+      showMessageBox: async (...args) => {
+        calls.messages.push(args.at(-1));
+        return { response: 0 };
+      },
+    },
+    net: { fetch },
+    screen: { getPrimaryDisplay: () => ({ workArea: { x: 0, y: 0, width: 1920, height: 1080 } }) },
     shell: {
       openExternal: url => {
         calls.external.push(url);
@@ -106,7 +144,7 @@ async function startWrapper({
       Object.hasOwn(mockedModules, name) ? mockedModules[name] : requireFromWrapper(name),
     __dirname: path.join(projectRoot, 'dist'),
     exports: {},
-    process: { platform },
+    process: { platform, arch: 'x64' },
     console: { error: () => {} },
   });
   await new Promise(resolve => setImmediate(resolve));
@@ -162,7 +200,7 @@ test('the guide opens in a sandbox with native zoom controls and pinch zoom afte
   assert.equal(win.options.icon, path.join(root, 'app/foodguide/html/icon.png'));
   const zoomMenu = calls.menu.find(item => item.role === 'viewMenu');
   assert.deepEqual(
-    Array.from(zoomMenu.submenu, item => item.role),
+    Array.from(zoomMenu.submenu.slice(0, 5), item => item.role),
     ['reload', undefined, 'resetZoom', 'zoomIn', 'zoomOut'],
   );
   assert.deepEqual(win.zoomLimits, []);
@@ -235,6 +273,10 @@ test('macOS activation recreates a closed window and closing follows platform co
       calls.menu.some(item => item.role === 'appMenu'),
       platform === 'darwin',
     );
+    assert.equal(
+      calls.appId,
+      platform === 'win32' ? 'com.squirrel.foodguide_app.foodguide-app' : undefined,
+    );
     const fileMenu = calls.menu.find(item => item.role === 'fileMenu');
     assert(fileMenu.submenu.some(item => item.role === 'close'));
     assert.equal(
@@ -299,6 +341,8 @@ test('packaging keeps runtime files and excludes guide development dependencies'
     '/package.json',
     '/LICENSE',
     '/dist/lib/navigation.cjs',
+    '/dist/lib/updates.cjs',
+    '/dist/lib/window-layout.cjs',
     '/node_modules/debug/src/index.js',
     '/app/foodguide/LICENSE',
     '/app/foodguide/html/img/sprites/sprites.json',
@@ -367,4 +411,83 @@ test('Copy Link shares the current section through the web guide and never expos
   calls.windows[0].webContents.getURL = () => 'file:///etc/passwd';
   copy.click(undefined, calls.windows[0]);
   assert.deepEqual(calls.clipboard, [webUrl]);
+});
+
+test('Open Food Guide Link opens a bundled copy of the shared route', async () => {
+  const fragment = '#discovery?game=together&inventory=carrot%40together';
+  const { calls } = await startWrapper({
+    clipboardText: ` https://bluehexagons.github.io/foodguide/index.html${fragment} `,
+  });
+  const file = calls.menu.find(item => item.role === 'fileMenu');
+  const open = file.submenu.find(item => item.id === 'open-guide-link');
+  open.click(undefined, calls.windows[0]);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(calls.windows[1].url, `${entryUrl}${fragment}`);
+  assert.deepEqual(calls.external, []);
+  for (const link of [
+    'https://example.com/',
+    'https://foodguide.bluehexagons.com/other',
+    'http://foodguide.bluehexagons.com/',
+    'word',
+  ]) {
+    assert.equal(bundledGuideLink(link, entryUrl), null);
+  }
+});
+
+test('the companion snapshots the pot and focuses the existing companion on repeat', async () => {
+  const { calls } = await startWrapper();
+  const [source] = calls.windows;
+  source.webContents.executeJavaScript = async () => ({
+    simulator: `${entryUrl}#simulator?game=together`,
+    ingredients: ['berries@together', '', 'berries@together', 'meat@together'],
+  });
+  const view = calls.menu.find(item => item.role === 'viewMenu');
+  const open = view.submenu.find(item => item.id === 'companion-window');
+  open.click(undefined, source);
+  open.click(undefined, source);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(calls.windows.length, 2);
+  const companion = calls.windows[1];
+  assert.equal(
+    companion.url,
+    `${entryUrl}#simulator?game=together&ingredients=berries%40together%2C%2Cberries%40together%2Cmeat%40together`,
+  );
+  assert.equal(companion.options.alwaysOnTop, true);
+  assert.equal(companion.options.webPreferences.sandbox, true);
+  open.click(undefined, source);
+  assert.equal(companion.focused, true);
+  assert.equal(calls.windows.length, 2);
+});
+
+test('Check for Updates reports an offline request without opening a download', async () => {
+  const { calls } = await startWrapper();
+  const help = calls.menu.find(item => item.role === 'help');
+  help.submenu[0].click(undefined, calls.windows[0]);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(calls.messages[0].message, 'Couldn’t check for updates');
+  assert.deepEqual(calls.external, []);
+});
+
+test('Check for Updates offers a matching download and coalesces duplicate requests', async () => {
+  let requests = 0;
+  const { calls } = await startWrapper({
+    fetch: async () => {
+      requests++;
+      return Response.json({
+        tag_name: 'v1.2.7-app.1',
+        draft: false,
+        prerelease: false,
+        assets: [{ name: 'foodguide-app-1.2.7-app.1-x64.AppImage' }],
+      });
+    },
+  });
+  const help = calls.menu.find(item => item.role === 'help');
+  help.submenu[0].click(undefined, calls.windows[0]);
+  help.submenu[0].click(undefined, calls.windows[0]);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(requests, 1);
+  assert.equal(calls.messages[0].buttons.join(','), 'Download AppImage,Release Notes,Later');
+  assert.deepEqual(calls.external, [
+    'https://github.com/bluehexagons/foodguide-app/releases/download/v1.2.7-app.1/foodguide-app-1.2.7-app.1-x64.AppImage',
+  ]);
 });

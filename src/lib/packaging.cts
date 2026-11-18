@@ -4,6 +4,8 @@ const runtimeFiles = new Set([
   '/dist/index.cjs',
   '/dist/build-info.json',
   '/dist/lib/navigation.cjs',
+  '/dist/lib/updates.cjs',
+  '/dist/lib/window-layout.cjs',
   '/package.json',
   '/LICENSE',
   '/app/foodguide/LICENSE',

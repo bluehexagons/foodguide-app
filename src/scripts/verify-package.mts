@@ -17,6 +17,8 @@ export function verifyPackage(outputPath: string, platform: string) {
     '/dist/build-info.json',
     '/app/foodguide/html/version.js',
     '/dist/lib/navigation.cjs',
+    '/dist/lib/updates.cjs',
+    '/dist/lib/window-layout.cjs',
     '/LICENSE',
     '/app/foodguide/LICENSE',
     '/app/foodguide/html/index.htm',
