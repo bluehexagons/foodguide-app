@@ -1461,7 +1461,9 @@ async function main() {
     linkedWindow,
     "document.querySelector('#ingredients [data-id=\"carrot@together\"]') !== null && document.querySelectorAll('#ingredients [data-id]').length === 1",
   );
-  const sourceReloaded = once(win.webContents, 'did-finish-load');
+  const sourceReloaded = once(win.webContents, 'did-finish-load', {
+    signal: AbortSignal.timeout(10_000),
+  });
   menu.getMenuItemById('reload-guide').click(undefined, win, win.webContents);
   await sourceReloaded;
   await waitFor(win, "document.querySelectorAll('#navbar [role=tab]').length === 7");
@@ -1492,9 +1494,28 @@ async function main() {
   await waitFor(menuWindow, "document.querySelectorAll('#navbar [role=tab]').length === 7");
   await waitFor(menuWindow, "document.querySelector('#desktop-build-version') !== null");
   assert.equal(menuWindow.webContents.getLastWebPreferences().contextIsolation, true);
-  const menuClosed = once(menuWindow, 'closed');
-  menu.getMenuItemById('close-window').click(undefined, menuWindow, menuWindow.webContents);
-  await menuClosed;
+  const close = menu.getMenuItemById('close-window');
+  assert.equal(close.role, 'close');
+  assert.equal(close.accelerator, 'CommandOrControl+W');
+  if (process.platform === 'darwin') {
+    if (!menuWindow.isVisible()) {
+      await once(menuWindow, 'ready-to-show', { signal: AbortSignal.timeout(10_000) });
+    }
+    menuWindow.focus();
+    menuWindow.webContents.focus();
+    app.focus({ steal: true });
+    await waitFor(menuWindow, 'document.hasFocus()');
+  }
+  const menuClosed = once(menuWindow, 'closed', { signal: AbortSignal.timeout(10_000) });
+  if (process.platform === 'darwin') {
+    // Cocoa implements the Close role through its native responder chain.
+    Menu.sendActionToFirstResponder('performClose:');
+  } else {
+    close.click(undefined, menuWindow, menuWindow.webContents);
+  }
+  await menuClosed.catch(error => {
+    throw new Error('The Close menu did not close the comparison window', { cause: error });
+  });
   assert.equal(BrowserWindow.getAllWindows().length, 1);
 
   const output = path.join(__dirname, '../out/test-results');

@@ -40,8 +40,9 @@ the wrapper and embedded guide, then generate sprite sheets and platform icons f
 
 The app starts with one window. Launching it again focuses the running app.
 **File → New Window** (`Ctrl+N` / `Cmd+N`) and modified section-link clicks are
-available for optional comparisons. **File → Close** (`Ctrl+W` / `Cmd+W`) closes
-the current window, and **View → Reload** (`Ctrl+R` / `Cmd+R`) reloads its guide.
+available for optional comparisons. **File → Close** (**Close Window** on macOS)
+closes the current window (`Ctrl+W` / `Cmd+W`). **View → Reload** (`Ctrl+R` / `Cmd+R`)
+reloads its guide.
 Pot choices and picker views are independent;
 named inventories, cookbook dishes, theme, and language synchronize across windows.
 The # links beside food and recipe names link to a highlighted entry.
