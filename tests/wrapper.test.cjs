@@ -1,6 +1,7 @@
 const assert = require('node:assert/strict');
 const { EventEmitter } = require('node:events');
 const { readFileSync } = require('node:fs');
+const { createRequire } = require('node:module');
 const path = require('node:path');
 const { test } = require('node:test');
 const { pathToFileURL } = require('node:url');
@@ -14,7 +15,8 @@ const entryUrl = pathToFileURL(path.join(root, 'app/foodguide/html/index.html'))
 async function startWrapper({
   installer = false,
   platform = 'linux',
-  loadError = null,
+  load = async () => {},
+  projectRoot = root,
   singleInstance = true,
 } = {}) {
   const calls = { windows: [], external: [], clipboard: [], quit: 0, ready: 0, exit: [] };
@@ -64,10 +66,15 @@ async function startWrapper({
     show() {
       this.visible = true;
     }
-    loadFile(file, options) {
-      this.file = file;
-      this.loadOptions = options;
-      return loadError ? Promise.reject(loadError) : Promise.resolve();
+    loadURL(url) {
+      this.url = url;
+      return load(this);
+    }
+    isDestroyed() {
+      return !calls.windows.includes(this);
+    }
+    destroy() {
+      calls.windows.splice(calls.windows.indexOf(this), 1);
     }
   }
   const electron = {
@@ -87,16 +94,17 @@ async function startWrapper({
       },
     },
   };
-  vm.runInNewContext(readFileSync(path.join(root, 'dist/index.cjs'), 'utf8'), {
+  const entry = path.join(root, 'dist/index.cjs');
+  const requireFromWrapper = createRequire(entry);
+  const mockedModules = {
+    electron,
+    'electron-squirrel-startup': installer,
+    'node:fs': { readFileSync: file => readFileSync(path.join(root, 'dist', path.basename(file))) },
+  };
+  vm.runInNewContext(readFileSync(entry, 'utf8'), {
     require: name =>
-      name === 'electron'
-        ? electron
-        : name === 'electron-squirrel-startup'
-          ? installer
-          : name.startsWith('./')
-            ? require(path.join(root, 'dist', name))
-            : require(name),
-    __dirname: path.join(root, 'dist'),
+      Object.hasOwn(mockedModules, name) ? mockedModules[name] : requireFromWrapper(name),
+    __dirname: path.join(projectRoot, 'dist'),
     exports: {},
     process: { platform },
     console: { error: () => {} },
@@ -138,7 +146,7 @@ test('launching again reopens a window when the macOS app is still running witho
   assert.equal(calls.quit, 0);
   app.emit('second-instance');
   assert.equal(calls.windows.length, 1);
-  assert.equal(calls.windows[0].file, path.join(root, 'app/foodguide/html/index.html'));
+  assert.equal(calls.windows[0].url, entryUrl);
   app.emit('second-instance');
   assert.equal(calls.windows.length, 1);
   assert.equal(calls.windows[0].focused, true);
@@ -155,7 +163,7 @@ test('the guide opens in a sandbox with native zoom controls and pinch zoom afte
   const zoomMenu = calls.menu.find(item => item.role === 'viewMenu');
   assert.deepEqual(
     Array.from(zoomMenu.submenu, item => item.role),
-    ['resetZoom', 'zoomIn', 'zoomOut'],
+    ['reload', undefined, 'resetZoom', 'zoomIn', 'zoomOut'],
   );
   assert.deepEqual(win.zoomLimits, []);
   win.webContents.emit('did-finish-load');
@@ -188,22 +196,18 @@ test('navigation and popups cannot load unrelated files or remote content', asyn
   for (const eventName of ['will-navigate', 'will-redirect']) {
     for (const url of ['file:///etc/passwd', 'https://example.com/', 'javascript:alert(1)']) {
       let prevented = false;
-      win.webContents.emit(
-        eventName,
-        {
-          preventDefault: () => {
-            prevented = true;
-          },
-        },
+      win.webContents.emit(eventName, {
         url,
-      );
+        preventDefault: () => {
+          prevented = true;
+        },
+      });
       assert(prevented);
     }
-    win.webContents.emit(
-      eventName,
-      { preventDefault: () => assert.fail('Guide link blocked') },
-      entryUrl,
-    );
+    win.webContents.emit(eventName, {
+      url: entryUrl,
+      preventDefault: () => assert.fail('Guide link blocked'),
+    });
   }
   assert.equal(win.openHandler({ url: 'https://example.com/' }).action, 'deny');
   assert.equal(win.openHandler({ url: 'file:///etc/passwd' }).action, 'deny');
@@ -231,6 +235,12 @@ test('macOS activation recreates a closed window and closing follows platform co
       calls.menu.some(item => item.role === 'appMenu'),
       platform === 'darwin',
     );
+    const fileMenu = calls.menu.find(item => item.role === 'fileMenu');
+    assert(fileMenu.submenu.some(item => item.role === 'close'));
+    assert.equal(
+      fileMenu.submenu.some(item => item.role === 'quit'),
+      platform !== 'darwin',
+    );
     app.emit('activate');
     assert.equal(calls.windows.length, 1);
     calls.windows.length = 0;
@@ -242,8 +252,39 @@ test('macOS activation recreates a closed window and closing follows platform co
 });
 
 test('a missing guide exits with a failure instead of leaving an empty window', async () => {
-  const { calls } = await startWrapper({ loadError: new Error('missing guide') });
+  const { calls } = await startWrapper({
+    load: async () => {
+      throw new Error('missing guide');
+    },
+  });
   assert.deepEqual(calls.exit, [1]);
+});
+
+test('a failed or canceled comparison window leaves the original open', async () => {
+  const pending = [];
+  const { calls } = await startWrapper({
+    load: win =>
+      win.url === entryUrl ? Promise.resolve() : new Promise((_, reject) => pending.push(reject)),
+  });
+  const [source] = calls.windows;
+  source.openHandler({ url: `${entryUrl}#recipes` });
+  source.openHandler({ url: `${entryUrl}#discovery` });
+  calls.windows[2].destroy();
+  pending[1](new Error('canceled'));
+  pending[0](new Error('unable to open comparison'));
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(calls.windows, [source]);
+  assert.deepEqual(calls.exit, []);
+});
+
+test('startup preserves literal percent escapes in the installation path', async () => {
+  const projectRoot = path.join(root, 'Food%20Guide');
+  const { calls } = await startWrapper({ projectRoot });
+  assert.equal(
+    calls.windows[0].url,
+    pathToFileURL(path.join(projectRoot, 'app/foodguide/html/index.html')).href,
+  );
+  assert.match(calls.windows[0].url, /Food%2520Guide/);
 });
 
 test('packaging keeps runtime files and excludes guide development dependencies', () => {
@@ -296,8 +337,7 @@ test('guide links and the New Window menu create independent sandboxed guide win
   assert.equal(source.openHandler({ url: destination }).action, 'deny');
   assert.equal(calls.windows.length, 2);
   const linked = calls.windows[1];
-  assert.equal(linked.file, source.file);
-  assert.equal(linked.loadOptions.hash, new URL(destination).hash.slice(1));
+  assert.equal(linked.url, destination);
   assert.equal(linked.options.webPreferences.sandbox, true);
   assert.equal(linked.options.webPreferences.nodeIntegration, false);
   const newWindow = calls.menu
@@ -306,7 +346,7 @@ test('guide links and the New Window menu create independent sandboxed guide win
   assert.equal(newWindow.accelerator, 'CmdOrCtrl+N');
   newWindow.click();
   assert.equal(calls.windows.length, 3);
-  assert.equal(calls.windows[2].loadOptions.hash, '');
+  assert.equal(calls.windows[2].url, entryUrl);
   assert.deepEqual(calls.external, []);
 });
 

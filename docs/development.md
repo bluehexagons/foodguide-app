@@ -3,7 +3,7 @@
 The desktop repository contains the Electron wrapper and build configuration. The guide's data, UI, translations, and assets live in the separate [Food Guide repository](https://github.com/bluehexagons/foodguide), pinned here as `app/foodguide`.
 
 The guide's browser suite includes keyboard navigation and axe-core accessibility
-audits of every panel in both themes and all three languages. It also checks
+audits of every panel in both themes and every supported language. It also checks
 emulated touch taps, canceled gestures, scrolling, long-press handling, and
 control sizing across narrow phone and larger tablet/desktop viewports, including
 increased text spacing and complete touch-visible ingredient names. It verifies
@@ -178,8 +178,13 @@ The parent commit records the gitlink; guide edits must be committed and pushed 
 
 ## Dependencies
 
-Use `npm run audit` to audit both dependency sets; a failure in either repository
-fails the command. Both CI workflows run it before building distributables.
+Use `npm run audit` to check the desktop runtime, all guide dependencies, and
+the desktop build tooling. Both CI workflows run it before building distributables.
+The full desktop audit reports and permits the single unpatched
+[picomatch advisory GHSA-fc5q-39xc-vjpf](https://github.com/advisories/GHSA-fc5q-39xc-vjpf)
+in the Forge build chain. Its consumers use fixed patterns to find native build
+files, and it is absent from the desktop runtime. The runtime and guide audits
+remain strict. Remove the exception when a patched dependency is available.
 Use `npm outdated` at the root and repeat it with `--prefix app/foodguide` for
 the guide. Upgrade guide dependencies in the guide repository.
 

@@ -4,6 +4,9 @@ const { mkdir, writeFile } = require('node:fs/promises');
 const path = require('node:path');
 const { setTimeout: delay } = require('node:timers/promises');
 const { app, BrowserWindow, Menu } = require('electron');
+const { commit } = require('../dist/build-info.json');
+
+const desktopBuildLabel = `Desktop ${app.getVersion()} (${commit})`;
 
 assert(process.env.FOODGUIDE_TEST_PROFILE, 'Run this test with npm run test:electron');
 app.setPath('userData', process.env.FOODGUIDE_TEST_PROFILE);
@@ -117,11 +120,11 @@ async function main() {
     await win.webContents.executeJavaScript("document.querySelector('#build-version').textContent"),
     /^Food Guide \d+\.\d+\.\d+ \((?:[a-f0-9]{40}|unknown)\)$/,
   );
-  assert.match(
+  assert.equal(
     await win.webContents.executeJavaScript(
       "document.querySelector('#desktop-build-version').textContent",
     ),
-    /^Desktop .+ \((?:[a-f0-9]{40}|unknown)\)$/,
+    desktopBuildLabel,
   );
   assert.equal(win.webContents.getLastWebPreferences().sandbox, true);
   assert.equal(win.webContents.getLastWebPreferences().contextIsolation, true);
@@ -1459,7 +1462,7 @@ async function main() {
     "document.querySelector('#ingredients [data-id=\"carrot@together\"]') !== null && document.querySelectorAll('#ingredients [data-id]').length === 1",
   );
   const sourceReloaded = once(win.webContents, 'did-finish-load');
-  win.webContents.reload();
+  menu.getMenuItemById('reload-guide').click(undefined, win, win.webContents);
   await sourceReloaded;
   await waitFor(win, "document.querySelectorAll('#navbar [role=tab]').length === 7");
   await waitFor(
@@ -1470,11 +1473,11 @@ async function main() {
     await win.webContents.executeJavaScript("document.querySelector('#build-version').textContent"),
     /^Food Guide \d+\.\d+\.\d+ \((?:[a-f0-9]{40}|unknown)\)$/,
   );
-  assert.match(
+  assert.equal(
     await win.webContents.executeJavaScript(
       "document.querySelector('#desktop-build-version').textContent",
     ),
-    /^Desktop .+ \((?:[a-f0-9]{40}|unknown)\)$/,
+    desktopBuildLabel,
   );
   assert.deepEqual(
     await win.webContents.executeJavaScript(
@@ -1487,8 +1490,11 @@ async function main() {
   menu.getMenuItemById('new-window').click(undefined, win, win.webContents);
   const [, menuWindow] = await menuCreated;
   await waitFor(menuWindow, "document.querySelectorAll('#navbar [role=tab]').length === 7");
+  await waitFor(menuWindow, "document.querySelector('#desktop-build-version') !== null");
   assert.equal(menuWindow.webContents.getLastWebPreferences().contextIsolation, true);
-  menuWindow.destroy();
+  const menuClosed = once(menuWindow, 'closed');
+  menu.getMenuItemById('close-window').click(undefined, menuWindow, menuWindow.webContents);
+  await menuClosed;
   assert.equal(BrowserWindow.getAllWindows().length, 1);
 
   const output = path.join(__dirname, '../out/test-results');
@@ -1498,7 +1504,7 @@ async function main() {
     (await win.webContents.capturePage()).toPNG(),
   );
   console.log(
-    `Electron smoke passed: ${manifest} sprites, native zoom menus and shortcuts, cooking views and preserved pot selections, search and full-pot feedback, mushroom search, keyboard recipes, grouped ingredient removal and selected-only controls, picker dismissal, tab navigation, mouse ingredient entry, keyboard table sorting, column selection and focus recovery at 200% zoom, horizontal scrolling, immediate saved selections, expandable analysis recipes and Simulator handoff, Discovery filtering, live analysis refresh, independent page sizes and expanded run boundaries, localized pagination, saved theme/language and ingredients after reload, sandbox, blocked popup, internal section links in independent windows, source-window reload isolation, shared multi-inventory edits, cookbook saving, explicit HTTPS sharing and per-window share choices, Options preferences and backdrop dismissal, and New Window menu.`,
+    `Electron smoke passed: ${manifest} sprites, native zoom menus and shortcuts, cooking views and preserved pot selections, search and full-pot feedback, mushroom search, keyboard recipes, grouped ingredient removal and selected-only controls, picker dismissal, tab navigation, mouse ingredient entry, keyboard table sorting, column selection and focus recovery at 200% zoom, horizontal scrolling, immediate saved selections, expandable analysis recipes and Simulator handoff, Discovery filtering, live analysis refresh, independent page sizes and expanded run boundaries, localized pagination, saved theme/language and ingredients after reload, sandbox, blocked popup, internal section links in independent windows, source-window reload isolation, shared multi-inventory edits, cookbook saving, explicit HTTPS sharing and per-window share choices, Options preferences and backdrop dismissal, and New Window, Reload, and Close menus.`,
   );
 }
 

@@ -5,6 +5,7 @@ const path = require('node:path');
 const { test } = require('node:test');
 
 const fixtureFiles = {
+  'package.json': '{}',
   'dist/index.cjs': '',
   'dist/build-info.json': '{"commit":"unknown"}',
   'app/foodguide/html/version.js': '',
@@ -15,6 +16,8 @@ const fixtureFiles = {
   'app/foodguide/html/index.htm': '',
   'app/foodguide/html/index.html': '',
   'app/foodguide/html/icon.png': '',
+  'app/foodguide/html/img/pwa/icon-192.png': '',
+  'app/foodguide/html/manifest.webmanifest': '',
   'app/foodguide/html/style/main.css': `@import url('header.css'); @import url('dialogs.css');`,
   'app/foodguide/html/style/header.css': `body { mask: url('../img/foodguide.svg'); }`,
   'app/foodguide/html/style/dialogs.css': '',
@@ -22,6 +25,8 @@ const fixtureFiles = {
   'app/foodguide/html/style/accessibility.css': '',
   'app/foodguide/html/foodguide.js': "export * from './food.js'; import './locales/index.js';",
   'app/foodguide/html/entry-redirect.js': '',
+  'app/foodguide/html/offline.js': '',
+  'app/foodguide/html/legacy-browser-warning.js': '',
   'app/foodguide/html/food.js': `import './collection.js'; import './preferences.js';
 const example = "import './example-only.js'";`,
   'app/foodguide/html/collection.js': "import './food.js';", // Module cycles are valid.
@@ -67,7 +72,7 @@ for (const platform of ['linux', 'darwin']) {
   });
 }
 
-for (const filename of ['foodguide.js', 'collection.js', 'locales/es.js']) {
+for (const filename of ['foodguide.js', 'collection.js', 'locales/es.js', 'offline.js']) {
   test(`package verification rejects a missing compiled ${filename}`, async t => {
     const { verifyPackage } = await import('../dist/scripts/verify-package.mjs');
     const output = await createArchive(t, { omit: `app/foodguide/html/${filename}` });
@@ -75,7 +80,7 @@ for (const filename of ['foodguide.js', 'collection.js', 'locales/es.js']) {
   });
 }
 
-for (const filename of ['dist/build-info.json', 'app/foodguide/html/version.js']) {
+for (const filename of ['package.json', 'dist/build-info.json', 'app/foodguide/html/version.js']) {
   test(`package verification rejects missing ${filename}`, async t => {
     const { verifyPackage } = await import('../dist/scripts/verify-package.mjs');
     const output = await createArchive(t, { omit: filename });

@@ -1,10 +1,10 @@
 {
   "name": "foodguide-app",
-  "version": "1.2.7-app.1",
+  "version": "1.2.7-app.2",
   "description": "Desktop app version of the unofficial Food Guide",
   "main": "dist/index.cjs",
   "scripts": {
-    "audit": "npm audit && npm --prefix app/foodguide audit",
+    "audit": "npm audit --omit=dev && npm --prefix app/foodguide audit && node tools/audit.mjs",
     "test": "npm run test:app && npm run test:guide",
     "test:guide": "npm --prefix app/foodguide test",
     "lint": "oxlint --disable-nested-config --deny-warnings && npm --prefix app/foodguide run lint",
@@ -44,10 +44,10 @@
     "@reforged/maker-appimage": "^6.0.0",
     "@types/debug": "^4.1.13",
     "@types/node": "^26.6.6",
-    "electron": "^45.3.2",
-    "es-module-lexer": "^3.0.4",
-    "oxfmt": "^0.78.0",
-    "oxlint": "^1.93.0",
+    "electron": "^45.3.4",
+    "es-module-lexer": "^3.0.5",
+    "oxfmt": "^0.79.0",
+    "oxlint": "^1.94.0",
     "sharp": "^0.35.5",
     "typescript": "^7.0.2"
   },

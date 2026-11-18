@@ -6,7 +6,7 @@ import navigation = require('./lib/navigation.cjs');
 import installerStartup = require('electron-squirrel-startup');
 
 const { app, BrowserWindow, Menu, shell, clipboard } = electron;
-const { pathToFileURL, URL } = url;
+const { pathToFileURL } = url;
 const { isExternalUrl, isGuideUrl, shareGuideUrl } = navigation;
 const root = path.resolve(__dirname, '..');
 
@@ -43,7 +43,11 @@ const createWindow = (initialUrl = guideUrl) => {
       .executeJavaScript(
         `(() => { const element = document.createElement('p'); element.className = 'info-footnote'; element.id = 'desktop-build-version'; element.textContent = ${JSON.stringify(desktopVersion)}; document.getElementById('build-version')?.after(element); })()`,
       )
-      .catch(error => console.error('Unable to display the desktop version:', error));
+      .catch(error => {
+        if (!win.isDestroyed()) {
+          console.error('Unable to display the desktop version:', error);
+        }
+      });
     void win.webContents.setVisualZoomLevelLimits(1, 5).catch(error => {
       console.error('Unable to enable pinch zoom:', error);
     });
@@ -56,7 +60,8 @@ const createWindow = (initialUrl = guideUrl) => {
     }
     return { action: 'deny' };
   });
-  const guardNavigation = (event: Electron.Event, url: string) => {
+  const guardNavigation = (event: Electron.Event<{ url: string }>) => {
+    const { url } = event;
     if (!isGuideUrl(url, guideUrl)) {
       event.preventDefault();
       openExternalUrl(url);
@@ -65,9 +70,16 @@ const createWindow = (initialUrl = guideUrl) => {
   win.webContents.on('will-navigate', guardNavigation);
   win.webContents.on('will-redirect', guardNavigation);
   win.once('ready-to-show', () => win.show());
-  void win.loadFile(guidePath, { hash: new URL(initialUrl).hash.slice(1) }).catch(error => {
+  void win.loadURL(initialUrl).catch(error => {
+    if (win.isDestroyed()) {
+      return;
+    }
     console.error('Unable to load the Food Guide:', error);
-    app.exit(1);
+    if (BrowserWindow.getAllWindows().length === 1) {
+      app.exit(1);
+    } else {
+      win.destroy();
+    }
   });
 };
 
@@ -117,13 +129,16 @@ if (installerStartup) {
               },
             },
             { type: 'separator' },
-            { role: process.platform === 'darwin' ? 'close' : 'quit' },
+            { id: 'close-window', role: 'close' },
+            ...(process.platform === 'darwin' ? [] : [{ role: 'quit' as const }]),
           ],
         },
         { role: 'editMenu' },
         {
           role: 'viewMenu',
           submenu: [
+            { id: 'reload-guide', role: 'reload' },
+            { type: 'separator' },
             { id: 'reset-zoom', role: 'resetZoom' },
             { id: 'zoom-in', role: 'zoomIn' },
             { id: 'zoom-out', role: 'zoomOut' },

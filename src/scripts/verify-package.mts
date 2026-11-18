@@ -12,6 +12,7 @@ export function verifyPackage(outputPath: string, platform: string) {
   const archive = path.join(resources, 'app.asar');
   const files = listPackage(archive, { isPack: false }).map(file => file.replaceAll('\\', '/'));
   for (const file of [
+    '/package.json',
     '/dist/index.cjs',
     '/dist/build-info.json',
     '/app/foodguide/html/version.js',
@@ -23,6 +24,8 @@ export function verifyPackage(outputPath: string, platform: string) {
     '/app/foodguide/html/style/main.css',
     '/app/foodguide/html/style/accessibility.css',
     '/app/foodguide/html/icon.png',
+    '/app/foodguide/html/img/pwa/icon-192.png',
+    '/app/foodguide/html/manifest.webmanifest',
     '/node_modules/electron-squirrel-startup/index.js',
   ]) {
     assert(files.includes(file), `Missing packaged file: ${file}`);
@@ -65,6 +68,8 @@ export function verifyPackage(outputPath: string, platform: string) {
   verifyModule('/app/foodguide/html/version.js');
   verifyModule('/app/foodguide/html/foodguide.js');
   verifyModule('/app/foodguide/html/entry-redirect.js');
+  verifyModule('/app/foodguide/html/offline.js');
+  verifyModule('/app/foodguide/html/legacy-browser-warning.js');
 
   const visitedStyles = new Set<string>();
   const verifyStyle = (filename: string) => {
