@@ -82,6 +82,11 @@ jobs:
       - name: Build release artifacts
         run: npm run make
 
+      - name: Verify the Windows installer and Start menu icon
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./tests/windows-installer.ps1
+
       - name: Upload release artifacts
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -107,7 +112,9 @@ jobs:
         run: |
           mkdir release-files
           while IFS= read -r -d '' file; do
-            destination="release-files/$(basename "$file")"
+            filename="${file##*/}"
+            # Use the name GitHub gives the Squirrel installer on download.
+            destination="release-files/${filename// /.}"
             if [[ -e "$destination" ]]; then
               echo "::error::Duplicate release filename: $destination"
               exit 1
