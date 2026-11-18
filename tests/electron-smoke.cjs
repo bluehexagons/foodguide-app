@@ -1499,10 +1499,14 @@ async function main() {
 
   const output = path.join(__dirname, '../out/test-results');
   await mkdir(output, { recursive: true });
-  await writeFile(
-    path.join(output, 'electron-smoke.png'),
-    (await win.webContents.capturePage()).toPNG(),
+  // Give Chromium a frame to present the original window after closing the one above it.
+  win.focus();
+  win.webContents.focus();
+  await win.webContents.executeJavaScript(
+    'new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true))))',
   );
+  const capture = await win.webContents.capturePage();
+  await writeFile(path.join(output, 'electron-smoke.png'), capture.toPNG());
   console.log(
     `Electron smoke passed: ${manifest} sprites, native zoom menus and shortcuts, cooking views and preserved pot selections, search and full-pot feedback, mushroom search, keyboard recipes, grouped ingredient removal and selected-only controls, picker dismissal, tab navigation, mouse ingredient entry, keyboard table sorting, column selection and focus recovery at 200% zoom, horizontal scrolling, immediate saved selections, expandable analysis recipes and Simulator handoff, Discovery filtering, live analysis refresh, independent page sizes and expanded run boundaries, localized pagination, saved theme/language and ingredients after reload, sandbox, blocked popup, internal section links in independent windows, source-window reload isolation, shared multi-inventory edits, cookbook saving, explicit HTTPS sharing and per-window share choices, Options preferences and backdrop dismissal, and New Window, Reload, and Close menus.`,
   );
